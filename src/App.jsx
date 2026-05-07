@@ -9,6 +9,9 @@ import DetalleReparacion from './pages/admin/DetalleReparacion'
 import NuevaReparacion   from './pages/admin/NuevaReparacion'
 import Inventario        from './pages/admin/Inventario'
 import NuevoRepuesto     from './pages/admin/NuevoRepuesto'
+import Facturacion       from './pages/admin/Facturacion'
+import DetalleFactura    from './pages/admin/DetalleFactura'
+import NuevaFactura      from './pages/admin/NuevaFactura'
 
 export default function App() {
   return (
@@ -28,6 +31,9 @@ export default function App() {
         <Route path="/admin/inventario"                   element={<Inventario />} />
         <Route path="/admin/inventario/nuevo"             element={<NuevoRepuesto />} />
         <Route path="/admin/inventario/:id/editar"        element={<NuevoRepuesto />} />
+        <Route path="/admin/facturacion"                  element={<Facturacion />} />
+        <Route path="/admin/facturacion/nueva"            element={<NuevaFactura />} />
+        <Route path="/admin/facturacion/:id"              element={<DetalleFactura />} />
       </Routes>
     </BrowserRouter>
   )
