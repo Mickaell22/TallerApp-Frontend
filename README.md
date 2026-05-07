@@ -6,7 +6,7 @@
 
 [![React](https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-5.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-3.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![CSS](https://img.shields.io/badge/CSS-Design%20System-1572B6?style=for-the-badge&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2023-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![License](https://img.shields.io/badge/Licencia-MIT-green?style=for-the-badge)](LICENSE)
 
@@ -19,6 +19,8 @@
 ## Descripción
 
 TallerApp es una SPA (Single Page Application) desarrollada en React que digitaliza la gestión del taller de Juan, eliminando el uso de cuadernos y planillas manuales. Permite a administradores, técnicos y clientes interactuar con el sistema desde un navegador web.
+
+El diseño usa un sistema CSS propio con variables de diseño (tokens), sin frameworks de utilidades. Paleta principal: azul oscuro `#0f1d3f` + naranja `#ff6a1a`.
 
 ---
 
