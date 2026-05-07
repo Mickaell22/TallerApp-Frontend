@@ -7,6 +7,8 @@ import Dashboard         from './pages/admin/Dashboard'
 import Reparaciones      from './pages/admin/Reparaciones'
 import DetalleReparacion from './pages/admin/DetalleReparacion'
 import NuevaReparacion   from './pages/admin/NuevaReparacion'
+import Inventario        from './pages/admin/Inventario'
+import NuevoRepuesto     from './pages/admin/NuevoRepuesto'
 
 export default function App() {
   return (
@@ -23,6 +25,9 @@ export default function App() {
         <Route path="/admin/reparaciones"                 element={<Reparaciones />} />
         <Route path="/admin/reparaciones/nueva"           element={<NuevaReparacion />} />
         <Route path="/admin/reparaciones/:id"             element={<DetalleReparacion />} />
+        <Route path="/admin/inventario"                   element={<Inventario />} />
+        <Route path="/admin/inventario/nuevo"             element={<NuevoRepuesto />} />
+        <Route path="/admin/inventario/:id/editar"        element={<NuevoRepuesto />} />
       </Routes>
     </BrowserRouter>
   )
