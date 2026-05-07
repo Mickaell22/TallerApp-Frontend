@@ -13,6 +13,8 @@ import Facturacion       from './pages/admin/Facturacion'
 import Reportes          from './pages/admin/Reportes'
 import DetalleFactura    from './pages/admin/DetalleFactura'
 import NuevaFactura      from './pages/admin/NuevaFactura'
+import Clientes          from './pages/admin/Clientes'
+import DetalleCliente    from './pages/admin/DetalleCliente'
 
 export default function App() {
   return (
@@ -36,6 +38,9 @@ export default function App() {
         <Route path="/admin/facturacion/nueva"            element={<NuevaFactura />} />
         <Route path="/admin/facturacion/:id"              element={<DetalleFactura />} />
         <Route path="/admin/reportes"                     element={<Reportes />} />
+        <Route path="/admin/clientes"                     element={<Clientes />} />
+        <Route path="/admin/clientes/nuevo"               element={<DetalleCliente />} />
+        <Route path="/admin/clientes/:id"                 element={<DetalleCliente />} />
       </Routes>
     </BrowserRouter>
   )
