@@ -3,6 +3,7 @@ import PrivateRoute from './routes/PrivateRoute'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import RecuperarPassword from './pages/RecuperarPassword'
+import PaginaPublica    from './pages/PaginaPublica'
 import Dashboard         from './pages/admin/Dashboard'
 import Reparaciones      from './pages/admin/Reparaciones'
 import DetalleReparacion from './pages/admin/DetalleReparacion'
@@ -26,7 +27,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Publicas */}
-        <Route path="/"                   element={<Navigate to="/login" replace />} />
+        <Route path="/"                   element={<PaginaPublica />} />
         <Route path="/login"              element={<Login />} />
         <Route path="/register"           element={<Register />} />
         <Route path="/recuperar-password" element={<RecuperarPassword />} />
