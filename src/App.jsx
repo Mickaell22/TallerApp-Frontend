@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import RecuperarPassword from './pages/RecuperarPassword'
 import PaginaPublica    from './pages/PaginaPublica'
+import Configuracion    from './pages/admin/Configuracion'
 import Dashboard         from './pages/admin/Dashboard'
 import Reparaciones      from './pages/admin/Reparaciones'
 import DetalleReparacion from './pages/admin/DetalleReparacion'
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/admin/clientes"                     element={<Clientes />} />
         <Route path="/admin/clientes/nuevo"               element={<DetalleCliente />} />
         <Route path="/admin/clientes/:id"                 element={<DetalleCliente />} />
+        <Route path="/admin/configuracion"                element={<Configuracion />} />
 
         {/* Técnico */}
         <Route path="/tecnico"                            element={<MisReparaciones />} />
