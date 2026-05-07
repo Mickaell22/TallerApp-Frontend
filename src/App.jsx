@@ -15,9 +15,11 @@ import DetalleFactura    from './pages/admin/DetalleFactura'
 import NuevaFactura      from './pages/admin/NuevaFactura'
 import Clientes            from './pages/admin/Clientes'
 import DetalleCliente      from './pages/admin/DetalleCliente'
-import MisReparaciones     from './pages/tecnico/MisReparaciones'
-import DetalleTecnico      from './pages/tecnico/DetalleTecnico'
-import HistorialTecnico    from './pages/tecnico/HistorialTecnico'
+import MisReparaciones          from './pages/tecnico/MisReparaciones'
+import DetalleTecnico           from './pages/tecnico/DetalleTecnico'
+import HistorialTecnico         from './pages/tecnico/HistorialTecnico'
+import MisReparacionesCliente   from './pages/cliente/MisReparacionesCliente'
+import DetalleReparacionCliente from './pages/cliente/DetalleReparacionCliente'
 
 export default function App() {
   return (
@@ -47,8 +49,12 @@ export default function App() {
 
         {/* Técnico */}
         <Route path="/tecnico"                            element={<MisReparaciones />} />
-        <Route path="/tecnico/:id"                        element={<DetalleTecnico />} />
         <Route path="/tecnico/historial"                  element={<HistorialTecnico />} />
+        <Route path="/tecnico/:id"                        element={<DetalleTecnico />} />
+
+        {/* Cliente registrado */}
+        <Route path="/cliente"                            element={<MisReparacionesCliente />} />
+        <Route path="/cliente/:id"                        element={<DetalleReparacionCliente />} />
       </Routes>
     </BrowserRouter>
   )
