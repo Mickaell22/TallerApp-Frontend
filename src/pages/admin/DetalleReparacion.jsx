@@ -44,6 +44,7 @@ export default function DetalleReparacion() {
   const [error, setError] = useState('')
   const [estado, setEstado] = useState('recibido')
   const [nota, setNota] = useState('')
+  const [costo, setCosto] = useState('')
   const [tecnicoId, setTecnicoId] = useState('')
   const [tecnicos, setTecnicos] = useState([])
   const [guardando, setGuardando] = useState(false)
@@ -56,6 +57,7 @@ export default function DetalleReparacion() {
         const data = resRep.data.data
         setRep(data)
         setEstado(data.estado)
+        setCosto(data.costo ?? '')
         setTecnicoId(data.tecnico?.id || '')
         setTecnicos((resUsuarios.data.data || []).filter(u => u.rol === 'tecnico'))
       } catch (err) {
@@ -74,11 +76,12 @@ export default function DetalleReparacion() {
       const res = await actualizarEstado(id, {
         estado,
         notas:      nota || undefined,
-        costo:      rep?.costo,
+        costo:      costo !== '' ? Number(costo) : undefined,
         tecnico_id: tecnicoId || undefined,
       })
       setRep(res.data.data)
       setEstado(res.data.data.estado)
+      setCosto(res.data.data.costo ?? '')
       setTecnicoId(res.data.data.tecnico?.id || '')
       setNota('')
       setMsgGuardado('Cambios guardados correctamente')
@@ -180,6 +183,18 @@ export default function DetalleReparacion() {
                 noResultados="No se encontro ningun tecnico"
               />
             </div>
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label className="label">Costo ($)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={costo}
+                onChange={e => setCosto(e.target.value)}
+              />
+            </div>
             <label className="label">Nota para el cliente (opcional)</label>
             <textarea
               className="input"
@@ -194,7 +209,7 @@ export default function DetalleReparacion() {
               </div>
             )}
             <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'flex-end' }}>
-              <button className="btn btn-secondary" onClick={() => { setEstado(rep.estado); setTecnicoId(rep.tecnico?.id || ''); setNota('') }}>Cancelar</button>
+              <button className="btn btn-secondary" onClick={() => { setEstado(rep.estado); setCosto(rep.costo ?? ''); setTecnicoId(rep.tecnico?.id || ''); setNota('') }}>Cancelar</button>
               <button className="btn btn-primary" onClick={handleGuardar} disabled={guardando}>
                 <Icon name="check" size={14} /> {guardando ? 'Guardando...' : 'Guardar cambios'}
               </button>

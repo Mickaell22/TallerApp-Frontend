@@ -14,6 +14,7 @@ export default function NuevaReparacion() {
     tecnico_id: '',
     marca: '', modelo: '',
     falla: '', observaciones: '',
+    costo: '',
   })
   const [clientes, setClientes] = useState([])
   const [tecnicos, setTecnicos] = useState([])
@@ -52,6 +53,7 @@ export default function NuevaReparacion() {
         problema:    form.falla,
         notas:       form.observaciones || undefined,
         tecnico_id:  form.tecnico_id ? Number(form.tecnico_id) : undefined,
+        costo:       form.costo ? Number(form.costo) : undefined,
       })
       navigate('/admin/reparaciones')
     } catch (err) {
@@ -160,6 +162,10 @@ export default function NuevaReparacion() {
                 <textarea className="input" name="falla" value={form.falla} onChange={handleChange} rows="3" placeholder="Describe el problema con el equipo..." required />
               </div>
               <div className="field">
+                <label className="label">Costo estimado (opcional)</label>
+                <input className="input" type="number" name="costo" value={form.costo} onChange={handleChange} min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <div className="field">
                 <label className="label">Observaciones del tecnico (opcional)</label>
                 <textarea className="input" name="observaciones" value={form.observaciones} onChange={handleChange} rows="2" placeholder="Estado fisico del equipo, accesorios recibidos..." />
               </div>
@@ -183,6 +189,7 @@ export default function NuevaReparacion() {
                 </dd>
                 <dt>Equipo</dt>        <dd>{[form.marca, form.modelo].filter(Boolean).join(' ') || '—'}</dd>
                 <dt>Tecnico</dt>       <dd>{tecnicoSeleccionado?.nombre || <span className="muted">Sin asignar</span>}</dd>
+                <dt>Costo estimado</dt><dd>{form.costo ? `$${Number(form.costo).toFixed(2)}` : <span className="muted">—</span>}</dd>
                 <dt>Estado inicial</dt><dd><span className="pill pill-recibido">Recibido</span></dd>
               </dl>
             </div>
