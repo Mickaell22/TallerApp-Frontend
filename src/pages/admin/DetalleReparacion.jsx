@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
-import { getReparacion, actualizarEstado } from '../../services/reparacionService'
+import { getReparacion, actualizarEstado, agregarRepuesto, eliminarRepuesto } from '../../services/reparacionService'
 import { getUsuarios } from '../../services/usuarioService'
+import { getRepuestos } from '../../services/repuestoService'
 import SelectBusqueda from '../../components/ui/SelectBusqueda'
 import { ESTADO_LABELS, estadoCSS, ESTADOS_ORDEN, ESTADO_TITULOS } from '../../utils/estados'
 
@@ -49,17 +50,23 @@ export default function DetalleReparacion() {
   const [tecnicos, setTecnicos] = useState([])
   const [guardando, setGuardando] = useState(false)
   const [msgGuardado, setMsgGuardado] = useState('')
+  const [inventario, setInventario] = useState([])
+  const [repuestoId, setRepuestoId] = useState('')
+  const [cantidadRep, setCantidadRep] = useState(1)
+  const [agregando, setAgregando] = useState(false)
+  const [msgRep, setMsgRep] = useState('')
 
   useEffect(() => {
     async function cargar() {
       try {
-        const [resRep, resUsuarios] = await Promise.all([getReparacion(id), getUsuarios()])
+        const [resRep, resUsuarios, resInv] = await Promise.all([getReparacion(id), getUsuarios(), getRepuestos()])
         const data = resRep.data.data
         setRep(data)
         setEstado(data.estado)
         setCosto(data.costo ?? '')
         setTecnicoId(data.tecnico?.id || '')
         setTecnicos((resUsuarios.data.data || []).filter(u => u.rol === 'tecnico'))
+        setInventario(resInv.data.data || [])
       } catch (err) {
         setError(err.response?.data?.error || 'Error al cargar la reparacion')
       } finally {
@@ -89,6 +96,36 @@ export default function DetalleReparacion() {
       setMsgGuardado(err.response?.data?.error || 'Error al guardar')
     } finally {
       setGuardando(false)
+    }
+  }
+
+  async function handleAgregarRepuesto() {
+    if (!repuestoId) return
+    setAgregando(true)
+    setMsgRep('')
+    try {
+      const res = await agregarRepuesto(id, { repuesto_id: Number(repuestoId), cantidad: Number(cantidadRep) })
+      setRep(res.data.data)
+      setRepuestoId('')
+      setCantidadRep(1)
+      const resInv = await getRepuestos()
+      setInventario(resInv.data.data || [])
+    } catch (err) {
+      setMsgRep(err.response?.data?.error || 'Error al agregar repuesto')
+    } finally {
+      setAgregando(false)
+    }
+  }
+
+  async function handleEliminarRepuesto(repuesto_id) {
+    setMsgRep('')
+    try {
+      const res = await eliminarRepuesto(id, repuesto_id)
+      setRep(res.data.data)
+      const resInv = await getRepuestos()
+      setInventario(resInv.data.data || [])
+    } catch (err) {
+      setMsgRep(err.response?.data?.error || 'Error al quitar repuesto')
     }
   }
 
@@ -220,6 +257,53 @@ export default function DetalleReparacion() {
             <div className="card-header">
               <h3 className="card-title">Repuestos utilizados</h3>
             </div>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--c-border)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px auto', gap: 8, alignItems: 'end' }}>
+                <div className="field" style={{ margin: 0 }}>
+                  <label className="label">Agregar repuesto</label>
+                  <SelectBusqueda
+                    items={inventario}
+                    value={repuestoId ? Number(repuestoId) : ''}
+                    onChange={val => setRepuestoId(val)}
+                    getValue={r => r.id}
+                    getLabel={r => `${r.nombre} (stock: ${r.stock})`}
+                    renderItem={r => (
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{r.nombre}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--c-text-muted)', marginTop: 2 }}>
+                          Stock: {r.stock} &nbsp;·&nbsp; ${Number(r.precio).toFixed(2)}
+                        </div>
+                      </div>
+                    )}
+                    placeholder="Buscar en inventario..."
+                    noResultados="No se encontro el repuesto"
+                  />
+                </div>
+                <div className="field" style={{ margin: 0 }}>
+                  <label className="label">Cant.</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="1"
+                    value={cantidadRep}
+                    onChange={e => setCantidadRep(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="btn btn-primary btn-sm"
+                  style={{ marginBottom: 1 }}
+                  onClick={handleAgregarRepuesto}
+                  disabled={!repuestoId || agregando}
+                >
+                  {agregando ? '...' : '+ Agregar'}
+                </button>
+              </div>
+              {msgRep && (
+                <div style={{ marginTop: 6, fontSize: 12.5, color: msgRep.includes('Error') || msgRep.includes('Stock') ? 'var(--c-danger)' : 'var(--c-success)' }}>
+                  {msgRep}
+                </div>
+              )}
+            </div>
             <table className="tbl">
               <thead>
                 <tr>
@@ -227,12 +311,13 @@ export default function DetalleReparacion() {
                   <th className="num">Cant.</th>
                   <th className="num">Precio unit.</th>
                   <th className="num">Subtotal</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {repuestos.length === 0 && (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', padding: 24 }} className="muted">
+                    <td colSpan="5" style={{ textAlign: 'center', padding: 24 }} className="muted">
                       Sin repuestos registrados
                     </td>
                   </tr>
@@ -246,12 +331,22 @@ export default function DetalleReparacion() {
                       <td className="num">{cant}</td>
                       <td className="num">{formatMoneda(precio)}</td>
                       <td className="num" style={{ fontWeight: 600 }}>{formatMoneda(cant * precio)}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: 'var(--c-danger)', padding: '2px 8px' }}
+                          onClick={() => handleEliminarRepuesto(r.id)}
+                          title="Quitar repuesto"
+                        >
+                          ✕
+                        </button>
+                      </td>
                     </tr>
                   )
                 })}
                 {repuestos.length > 0 && (
                   <tr style={{ background: 'var(--c-surface-2)' }}>
-                    <td colSpan="3" className="num" style={{ fontWeight: 600 }}>Total repuestos</td>
+                    <td colSpan="4" className="num" style={{ fontWeight: 600 }}>Total repuestos</td>
                     <td className="num" style={{ fontWeight: 700, fontSize: 14 }}>{formatMoneda(total)}</td>
                   </tr>
                 )}
