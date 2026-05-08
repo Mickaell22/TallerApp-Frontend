@@ -1,53 +1,36 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from '../components/ui/Icon'
+import { getSeguimiento } from '../services/reparacionService'
+import { ESTADO_LABELS, estadoCSS, ESTADOS_ORDEN } from '../utils/estados'
 
-const ESTADO_LABELS = {
-  recibido:    'Recibido',
-  diagnostico: 'En diagnóstico',
-  reparacion:  'En reparación',
-  listo:       'Listo',
-  entregado:   'Entregado',
-}
-
-const MOCK_REPARACIONES = [
-  {
-    codigo: 'TLR-2026-0148', dispositivo: 'iPhone 13 Pro',
-    falla: 'Pantalla rota tras caída', estado: 'reparacion',
-    timeline: [
-      { estado: 'recibido',    titulo: 'Recibido',           fecha: '02 May, 10:24', done: true },
-      { estado: 'diagnostico', titulo: 'En diagnóstico',     fecha: '02 May, 14:10', done: true },
-      { estado: 'reparacion',  titulo: 'En reparación',      fecha: '03 May, 09:45', current: true },
-      { estado: 'listo',       titulo: 'Listo',              fecha: '—',             done: false },
-      { estado: 'entregado',   titulo: 'Entregado',          fecha: '—',             done: false },
-    ],
-  },
-]
-
-function MiniTimeline({ timeline }) {
+function MiniTimeline({ estadoActual }) {
+  const idx = ESTADOS_ORDEN.indexOf(estadoActual)
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      {timeline.map((step, i) => {
-        const active = step.done || step.current
+      {ESTADOS_ORDEN.map((e, i) => {
+        const done    = i < idx
+        const current = i === idx
+        const active  = done || current
         return (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < timeline.length - 1 ? 1 : 'none' }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < ESTADOS_ORDEN.length - 1 ? 1 : 'none' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
               <div style={{
                 width: 22, height: 22, borderRadius: '50%',
-                background: step.done ? 'var(--c-success)' : step.current ? 'var(--c-accent)' : 'rgba(255,255,255,.1)',
+                background: done ? 'var(--c-success)' : current ? 'var(--c-accent)' : 'rgba(255,255,255,.1)',
                 color: active ? '#fff' : '#8a98b8',
                 display: 'grid', placeItems: 'center',
                 fontSize: 10, fontWeight: 700,
-                boxShadow: step.current ? '0 0 0 4px rgba(255,106,26,.18)' : 'none',
+                boxShadow: current ? '0 0 0 4px rgba(255,106,26,.18)' : 'none',
               }}>
-                {step.done ? '✓' : i + 1}
+                {done ? '✓' : i + 1}
               </div>
               <div style={{ fontSize: 10.5, color: active ? '#fff' : '#8a98b8', fontWeight: active ? 600 : 500, textAlign: 'center', maxWidth: 60, lineHeight: 1.2 }}>
-                {ESTADO_LABELS[step.estado]}
+                {ESTADO_LABELS[e]}
               </div>
             </div>
-            {i < timeline.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: timeline[i + 1].done ? 'var(--c-success)' : 'rgba(255,255,255,.1)', margin: '0 2px', marginBottom: 18 }} />
+            {i < ESTADOS_ORDEN.length - 1 && (
+              <div style={{ flex: 1, height: 2, background: i + 1 <= idx ? 'var(--c-success)' : 'rgba(255,255,255,.1)', margin: '0 2px', marginBottom: 18 }} />
             )}
           </div>
         )
@@ -61,17 +44,21 @@ export default function PaginaPublica() {
   const [codigo, setCodigo] = useState('')
   const [result, setResult]  = useState(null)
   const [noEncontrado, setNoEncontrado] = useState(false)
+  const [buscando, setBuscando] = useState(false)
 
-  function handleConsulta(e) {
+  async function handleConsulta(e) {
     e.preventDefault()
     if (!codigo.trim()) return
-    const found = MOCK_REPARACIONES.find(r => r.codigo.toLowerCase() === codigo.trim().toLowerCase())
-    if (found) {
-      setResult(found)
-      setNoEncontrado(false)
-    } else {
-      setResult(null)
+    setBuscando(true)
+    setNoEncontrado(false)
+    setResult(null)
+    try {
+      const res = await getSeguimiento(codigo.trim())
+      setResult(res.data.data)
+    } catch {
       setNoEncontrado(true)
+    } finally {
+      setBuscando(false)
     }
   }
 
@@ -84,12 +71,12 @@ export default function PaginaPublica() {
         </div>
         <div className="public-nav-links">
           <a href="#">Servicios</a>
-          <a href="#">Cómo funciona</a>
+          <a href="#">Como funciona</a>
           <a href="#">Contacto</a>
         </div>
         <div className="public-nav-cta">
           <button className="btn btn-ghost" style={{ color: '#cfd6e4' }} onClick={() => navigate('/login')}>
-            Iniciar sesión
+            Iniciar sesion
           </button>
           <button className="btn btn-primary" onClick={() => navigate('/register')}>
             Registrarse
@@ -107,8 +94,8 @@ export default function PaginaPublica() {
             Tu celular en <span className="accent">buenas manos</span>, sin sorpresas.
           </h1>
           <p className="hero-sub">
-            Diagnóstico transparente, repuestos originales y seguimiento en tiempo real
-            de tu reparación. Consulta el estado de tu equipo cuando quieras, con un solo código.
+            Diagnostico transparente, repuestos originales y seguimiento en tiempo real
+            de tu reparacion. Consulta el estado de tu equipo cuando quieras, con un solo codigo.
           </p>
           <div className="hero-actions">
             <button className="btn btn-primary btn-lg" onClick={() => navigate('/register')}>
@@ -119,7 +106,7 @@ export default function PaginaPublica() {
               style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.15)', color: '#fff' }}
               onClick={() => navigate('/login')}
             >
-              Iniciar sesión
+              Iniciar sesion
             </button>
           </div>
 
@@ -134,7 +121,7 @@ export default function PaginaPublica() {
             </div>
             <div>
               <div style={{ fontSize: 24, fontWeight: 700, color: '#fff', letterSpacing: '-.02em' }}>6 meses</div>
-              <div style={{ fontSize: 12.5, color: '#8a98b8', fontWeight: 500 }}>Garantía incluida</div>
+              <div style={{ fontSize: 12.5, color: '#8a98b8', fontWeight: 500 }}>Garantia incluida</div>
             </div>
           </div>
         </div>
@@ -145,8 +132,8 @@ export default function PaginaPublica() {
               <Icon name="search" size={18} />
             </div>
             <div>
-              <h3 className="consulta-title">Consulta tu reparación</h3>
-              <p className="consulta-sub" style={{ margin: 0 }}>Ingresa tu código de seguimiento</p>
+              <h3 className="consulta-title">Consulta tu reparacion</h3>
+              <p className="consulta-sub" style={{ margin: 0 }}>Ingresa tu codigo de seguimiento</p>
             </div>
           </div>
 
@@ -157,8 +144,8 @@ export default function PaginaPublica() {
               value={codigo}
               onChange={e => setCodigo(e.target.value.toUpperCase())}
             />
-            <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 12 }}>
-              Consultar estado <Icon name="arrowRight" size={15} />
+            <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 12 }} disabled={buscando}>
+              {buscando ? 'Consultando...' : <>Consultar estado <Icon name="arrowRight" size={15} /></>}
             </button>
           </form>
 
@@ -171,22 +158,22 @@ export default function PaginaPublica() {
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{result.dispositivo}</div>
                 </div>
-                <span className={`pill pill-${result.estado}`}>{ESTADO_LABELS[result.estado]}</span>
+                <span className={`pill pill-${estadoCSS(result.estado)}`}>{ESTADO_LABELS[result.estado] || result.estado}</span>
               </div>
-              <div style={{ color: '#b9c2d6', fontSize: 13, marginBottom: 14 }}>{result.falla}</div>
-              <MiniTimeline timeline={result.timeline} />
+              <div style={{ color: '#b9c2d6', fontSize: 13, marginBottom: 14 }}>{result.problema}</div>
+              <MiniTimeline estadoActual={result.estado} />
             </div>
           )}
 
           {noEncontrado && (
             <div style={{ marginTop: 14, padding: '12px 14px', background: 'rgba(196,48,48,.15)', borderRadius: 8, color: '#ff9b9b', fontSize: 13 }}>
-              No se encontró ninguna reparación con ese código.
+              No se encontro ninguna reparacion con ese codigo.
             </div>
           )}
 
           {!result && !noEncontrado && (
             <p style={{ color: '#6c7a99', fontSize: 12, marginTop: 14, marginBottom: 0, textAlign: 'center' }}>
-              Prueba con el código: <span className="mono" style={{ color: '#b9c2d6' }}>TLR-2026-0148</span>
+              Ingresa el codigo de seguimiento de tu equipo
             </p>
           )}
         </div>

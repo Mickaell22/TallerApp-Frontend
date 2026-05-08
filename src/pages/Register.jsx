@@ -25,7 +25,7 @@ export default function Register() {
       await registerService({ nombre: form.nombre, email: form.email, password: form.password })
       navigate('/login')
     } catch (err) {
-      setError(err.response?.data?.mensaje || 'Error al registrar la cuenta')
+      setError(err.response?.data?.error || 'Error al registrar la cuenta')
     } finally {
       setCargando(false)
     }

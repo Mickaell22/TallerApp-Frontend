@@ -1,18 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
-
-const REPUESTOS = [
-  { id: 1, sku: 'PNT-IP13P-OEM', nombre: 'Pantalla iPhone 13 Pro (OEM)',    categoria: 'Pantallas',   stock: 2,  minimo: 5,  costo: 78000, ubicacion: 'A-12' },
-  { id: 2, sku: 'BAT-IP12-ORIG',  nombre: 'Batería iPhone 12 original',      categoria: 'Baterías',    stock: 14, minimo: 6,  costo: 22000, ubicacion: 'B-04' },
-  { id: 3, sku: 'PNT-SAMA52',     nombre: 'Pantalla Samsung A52',            categoria: 'Pantallas',   stock: 1,  minimo: 4,  costo: 41000, ubicacion: 'A-08' },
-  { id: 4, sku: 'CON-USBC-XM',   nombre: 'Conector carga USB-C Xiaomi',     categoria: 'Conectores',  stock: 22, minimo: 10, costo: 4500,  ubicacion: 'C-01' },
-  { id: 5, sku: 'PNT-IP14',       nombre: 'Pantalla iPhone 14',              categoria: 'Pantallas',   stock: 6,  minimo: 4,  costo: 92000, ubicacion: 'A-15' },
-  { id: 6, sku: 'BAT-SAM-S22',   nombre: 'Batería Samsung S22',             categoria: 'Baterías',    stock: 3,  minimo: 5,  costo: 18000, ubicacion: 'B-07' },
-  { id: 7, sku: 'CAM-IP13',       nombre: 'Módulo cámara iPhone 13',         categoria: 'Cámaras',     stock: 8,  minimo: 3,  costo: 34000, ubicacion: 'D-02' },
-  { id: 8, sku: 'ALT-IP11',       nombre: 'Altavoz iPhone 11',               categoria: 'Audio',       stock: 0,  minimo: 4,  costo: 6800,  ubicacion: 'E-09' },
-]
+import { getRepuestos } from '../../services/repuestoService'
+import { descargarCSV } from '../../utils/exportCSV'
 
 const FILTROS = [
   { id: 'todos',   label: 'Todos' },
@@ -21,38 +12,66 @@ const FILTROS = [
 ]
 
 function formatMoneda(n) {
-  return '$' + n.toLocaleString('es-EC')
+  if (!n) return '—'
+  return '$' + Number(n).toLocaleString('es-EC')
 }
 
 export default function Inventario() {
   const navigate = useNavigate()
-  const [filtro, setFiltro]   = useState('todos')
-  const [search, setSearch]   = useState('')
+  const [filtro, setFiltro] = useState('todos')
+  const [search, setSearch] = useState('')
+  const [repuestos, setRepuestos] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
 
-  const lowCount = REPUESTOS.filter(i => i.stock < i.minimo).length
+  useEffect(() => {
+    async function cargar() {
+      try {
+        const res = await getRepuestos()
+        setRepuestos(res.data.data || [])
+      } catch (err) {
+        setError(err.response?.data?.error || 'Error al cargar inventario')
+      } finally {
+        setCargando(false)
+      }
+    }
+    cargar()
+  }, [])
 
-  const lista = REPUESTOS.filter(i => {
-    if (filtro === 'bajo'    && !(i.stock < i.minimo)) return false
-    if (filtro === 'agotado' && i.stock !== 0)         return false
+  const lowCount = repuestos.filter(i => i.stock < i.stock_minimo).length
+
+  const lista = repuestos.filter(i => {
+    if (filtro === 'bajo'    && !(i.stock < i.stock_minimo)) return false
+    if (filtro === 'agotado' && i.stock !== 0)               return false
     if (search) {
       const q = search.toLowerCase()
-      if (!(i.sku + i.nombre + i.categoria).toLowerCase().includes(q)) return false
+      if (!((i.sku || '') + i.nombre + (i.categoria || '')).toLowerCase().includes(q)) return false
     }
     return true
   })
 
   return (
-    <AdminLayout active="inventario" title="Inventario" subtitle={`${REPUESTOS.length} repuestos`}>
+    <AdminLayout active="inventario" title="Inventario" subtitle={`${repuestos.length} repuestos`}>
       <div className="page-header">
         <div>
           <h1 className="page-title">Inventario</h1>
           <p className="page-subtitle">
-            {REPUESTOS.length} repuestos •{' '}
-            <span style={{ color: 'var(--c-danger)', fontWeight: 600 }}>{lowCount} con stock bajo</span>
+            {repuestos.length} repuestos{lowCount > 0 && (
+              <> - <span style={{ color: 'var(--c-danger)', fontWeight: 600 }}>{lowCount} con stock bajo</span></>
+            )}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={() => descargarCSV(
+            repuestos.map(i => ({
+              SKU: i.sku || '',
+              Nombre: i.nombre,
+              Categoria: i.categoria || '',
+              Ubicacion: i.ubicacion || '',
+              Stock: i.stock,
+              'Stock minimo': i.stock_minimo,
+              'Precio ($)': i.precio,
+            })), 'inventario.csv')}>
             <Icon name="download" size={14} /> Exportar
           </button>
           <button className="btn btn-primary" onClick={() => navigate('/admin/inventario/nuevo')}>
@@ -60,6 +79,8 @@ export default function Inventario() {
           </button>
         </div>
       </div>
+
+      {error && <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>}
 
       <div className="table-wrap">
         <div className="table-toolbar">
@@ -80,64 +101,76 @@ export default function Inventario() {
               >
                 {f.label}
                 {f.id === 'todos' && (
-                  <span style={{ opacity: .7, marginLeft: 4 }}>{REPUESTOS.length}</span>
+                  <span style={{ opacity: .7, marginLeft: 4 }}>{repuestos.length}</span>
                 )}
               </button>
             ))}
           </div>
         </div>
 
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>SKU</th>
-              <th>Repuesto</th>
-              <th>Categoría</th>
-              <th>Stock</th>
-              <th>Ubicación</th>
-              <th className="num">Costo</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.map(i => {
-              const ratio      = i.minimo === 0 ? 1 : i.stock / i.minimo
-              const cls        = i.stock === 0 ? 'crit' : ratio < 0.5 ? 'crit' : ratio < 1 ? 'warn' : 'ok'
-              const stockColor = i.stock === 0 ? 'var(--c-danger)' : ratio < 1 ? 'var(--c-warn)' : 'var(--c-text)'
-              return (
-                <tr key={i.id}>
-                  <td className="mono small muted">{i.sku}</td>
-                  <td style={{ fontWeight: 500 }}>{i.nombre}</td>
-                  <td className="muted">{i.categoria}</td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span className="stock-bar">
-                        <span
-                          className={'stock-bar-fill ' + cls}
-                          style={{ width: Math.max(4, Math.min(100, ratio * 50)) + '%' }}
-                        />
-                      </span>
-                      <span style={{ color: stockColor, fontWeight: 600, fontFeatureSettings: '"tnum"' }}>
-                        {i.stock}
-                      </span>
-                      <span className="muted small" style={{ marginLeft: 4 }}>/ mín {i.minimo}</span>
-                    </div>
-                  </td>
-                  <td className="mono small muted">{i.ubicacion}</td>
-                  <td className="num" style={{ fontFeatureSettings: '"tnum"' }}>{formatMoneda(i.costo)}</td>
-                  <td>
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => navigate(`/admin/inventario/${i.id}/editar`)}
-                    >
-                      Editar
-                    </button>
+        {cargando ? (
+          <div className="muted" style={{ padding: 40, textAlign: 'center' }}>Cargando...</div>
+        ) : (
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Repuesto</th>
+                <th>Categoria</th>
+                <th>Stock</th>
+                <th>Ubicacion</th>
+                <th className="num">Precio</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lista.length === 0 && (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: 32 }} className="muted">
+                    No hay repuestos
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
+              )}
+              {lista.map(i => {
+                const minimo = i.stock_minimo || 0
+                const ratio = minimo === 0 ? 1 : i.stock / minimo
+                const cls = i.stock === 0 ? 'crit' : ratio < 0.5 ? 'crit' : ratio < 1 ? 'warn' : 'ok'
+                const stockColor = i.stock === 0 ? 'var(--c-danger)' : ratio < 1 ? 'var(--c-warn)' : 'var(--c-text)'
+                return (
+                  <tr key={i.id}>
+                    <td className="mono small muted">{i.sku || '—'}</td>
+                    <td style={{ fontWeight: 500 }}>{i.nombre}</td>
+                    <td className="muted">{i.categoria || '—'}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className="stock-bar">
+                          <span
+                            className={'stock-bar-fill ' + cls}
+                            style={{ width: Math.max(4, Math.min(100, ratio * 50)) + '%' }}
+                          />
+                        </span>
+                        <span style={{ color: stockColor, fontWeight: 600, fontFeatureSettings: '"tnum"' }}>
+                          {i.stock}
+                        </span>
+                        <span className="muted small" style={{ marginLeft: 4 }}>/ min {minimo}</span>
+                      </div>
+                    </td>
+                    <td className="mono small muted">{i.ubicacion || '—'}</td>
+                    <td className="num" style={{ fontFeatureSettings: '"tnum"' }}>{formatMoneda(i.precio)}</td>
+                    <td>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => navigate(`/admin/inventario/${i.id}/editar`)}
+                      >
+                        Editar
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </AdminLayout>
   )

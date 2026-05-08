@@ -12,9 +12,8 @@ const adminNav = [
 ]
 
 const tecnicoNav = [
-  { id: 'asignadas',    label: 'Mis reparaciones', icon: 'wrench',   path: '/tecnico' },
-  { id: 'historial',    label: 'Historial',         icon: 'history',  path: '/tecnico/historial' },
-  { id: 'inventario',   label: 'Inventario',        icon: 'box',      path: '/tecnico/inventario' },
+  { id: 'asignadas', label: 'Mis reparaciones', icon: 'wrench',  path: '/tecnico' },
+  { id: 'historial', label: 'Historial',         icon: 'history', path: '/tecnico/historial' },
 ]
 
 export default function Sidebar({ active }) {
@@ -63,10 +62,12 @@ export default function Sidebar({ active }) {
 
       <div className="sidebar-section-label">Cuenta</div>
       <nav className="sidebar-nav">
-        <button className="sidebar-nav-item" onClick={() => handleNav('/admin/configuracion')}>
-          <Icon name="settings" size={17} className="sidebar-nav-icon" />
-          Configuración
-        </button>
+        {usuario?.rol === 'administrador' && (
+          <button className="sidebar-nav-item" onClick={() => handleNav('/admin/configuracion')}>
+            <Icon name="settings" size={17} className="sidebar-nav-icon" />
+            Configuración
+          </button>
+        )}
         <button className="sidebar-nav-item" onClick={handleLogout}>
           <Icon name="logout" size={17} className="sidebar-nav-icon" />
           Cerrar sesión

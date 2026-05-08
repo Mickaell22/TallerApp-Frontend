@@ -1,48 +1,71 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
-
-const HISTORIAL = [
-  { id: 7,  codigo: 'TLR-2026-0142', cliente: 'Camila Ortiz',   dispositivo: 'Samsung S22',       falla: 'Cámara trasera no enfoca',         fechaEntrega: '04 May 2026', costo: 67000  },
-  { id: 10, codigo: 'TLR-2026-0139', cliente: 'Bruno Suárez',   dispositivo: 'iPhone XR',          falla: 'Daño por líquido',                 fechaEntrega: '02 May 2026', costo: 89000  },
-  { id: 11, codigo: 'TLR-2026-0131', cliente: 'Sofía Romero',   dispositivo: 'Motorola G72',       falla: 'Conector de carga dañado',         fechaEntrega: '28 Abr 2026', costo: 26000  },
-  { id: 12, codigo: 'TLR-2026-0118', cliente: 'Diego Castro',   dispositivo: 'iPhone 12',          falla: 'Cambio de batería',                fechaEntrega: '20 Abr 2026', costo: 52000  },
-  { id: 13, codigo: 'TLR-2026-0102', cliente: 'Ana Torres',     dispositivo: 'Samsung Galaxy A54', falla: 'Pantalla rota',                    fechaEntrega: '10 Abr 2026', costo: 85000  },
-]
+import { useAuth } from '../../context/AuthContext'
+import { getReparaciones } from '../../services/reparacionService'
 
 function formatMoneda(n) {
-  return '$' + n.toLocaleString('es-EC')
+  if (!n) return '—'
+  return '$' + Number(n).toLocaleString('es-EC')
+}
+
+function formatFecha(fecha) {
+  if (!fecha) return '—'
+  return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 export default function HistorialTecnico() {
   const navigate = useNavigate()
+  const { usuario } = useAuth()
   const [search, setSearch] = useState('')
+  const [historial, setHistorial] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
 
-  const lista = HISTORIAL.filter(r => {
+  useEffect(() => {
+    async function cargar() {
+      try {
+        const res = await getReparaciones()
+        const data = (res.data.data || []).filter(r =>
+          r.tecnico?.id === usuario?.id && r.estado === 'entregado'
+        )
+        setHistorial(data)
+      } catch (err) {
+        setError(err.response?.data?.error || 'Error al cargar historial')
+      } finally {
+        setCargando(false)
+      }
+    }
+    cargar()
+  }, [usuario])
+
+  const lista = historial.filter(r => {
     if (!search) return true
     const q = search.toLowerCase()
-    return (r.codigo + r.cliente + r.dispositivo).toLowerCase().includes(q)
+    const cliente = r.cliente?.usuario?.nombre || ''
+    return (r.codigo + cliente + r.dispositivo).toLowerCase().includes(q)
   })
 
-  const totalEntregadas = HISTORIAL.length
-  const totalFacturado  = HISTORIAL.reduce((s, r) => s + r.costo, 0)
+  const totalFacturado = historial.reduce((s, r) => s + Number(r.costo || 0), 0)
 
   return (
     <AdminLayout active="historial" title="Historial" subtitle="Reparaciones completadas">
       <div className="page-header">
         <div>
           <h1 className="page-title">Historial</h1>
-          <p className="page-subtitle">{totalEntregadas} reparaciones completadas</p>
+          <p className="page-subtitle">{historial.length} reparaciones completadas</p>
         </div>
       </div>
+
+      {error && <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>}
 
       <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(2,1fr)', marginBottom: 16 }}>
         <div className="stat-card">
           <div className="stat-card-icon green"><Icon name="check" size={17} /></div>
-          <div className="stat-card-label">Completadas (mes)</div>
-          <div className="stat-card-value">{totalEntregadas}</div>
-          <div className="stat-card-delta"><Icon name="arrowUp" size={11} />+12% vs mes anterior</div>
+          <div className="stat-card-label">Completadas</div>
+          <div className="stat-card-value">{historial.length}</div>
+          <div className="stat-card-delta"><Icon name="arrowUp" size={11} />Total entregadas</div>
         </div>
         <div className="stat-card">
           <div className="stat-card-icon" style={{ background: 'var(--c-primary-bg)', color: 'var(--c-primary)' }}>
@@ -59,39 +82,50 @@ export default function HistorialTecnico() {
           <div className="search">
             <Icon name="search" size={14} />
             <input
-              placeholder="Buscar por código, cliente o equipo..."
+              placeholder="Buscar por codigo, cliente o equipo..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
         </div>
 
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Cliente</th>
-              <th>Dispositivo</th>
-              <th>Falla</th>
-              <th>Fecha entrega</th>
-              <th className="num">Costo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.map(r => (
-              <tr key={r.id}>
-                <td className="mono small muted">{r.codigo}</td>
-                <td style={{ fontWeight: 500 }}>{r.cliente}</td>
-                <td>{r.dispositivo}</td>
-                <td className="muted" style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {r.falla}
-                </td>
-                <td className="muted">{r.fechaEntrega}</td>
-                <td className="num" style={{ fontFeatureSettings: '"tnum"' }}>{formatMoneda(r.costo)}</td>
+        {cargando ? (
+          <div className="muted" style={{ padding: 40, textAlign: 'center' }}>Cargando...</div>
+        ) : (
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Codigo</th>
+                <th>Cliente</th>
+                <th>Dispositivo</th>
+                <th>Falla</th>
+                <th>Fecha entrega</th>
+                <th className="num">Costo</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {lista.length === 0 && (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: 32 }} className="muted">
+                    Sin reparaciones completadas
+                  </td>
+                </tr>
+              )}
+              {lista.map(r => (
+                <tr key={r.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/tecnico/${r.id}`)}>
+                  <td className="mono small muted">{r.codigo}</td>
+                  <td style={{ fontWeight: 500 }}>{r.cliente?.usuario?.nombre || '—'}</td>
+                  <td>{r.dispositivo}</td>
+                  <td className="muted" style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {r.problema}
+                  </td>
+                  <td className="muted">{formatFecha(r.fecha_entrega || r.updatedAt)}</td>
+                  <td className="num" style={{ fontFeatureSettings: '"tnum"' }}>{formatMoneda(r.costo)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </AdminLayout>
   )
