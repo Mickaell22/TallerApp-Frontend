@@ -72,6 +72,7 @@ export default function DetalleFactura() {
   }
 
   const repuestos = factura.reparacion?.repuestos || []
+  const costoServicio = Number(factura.reparacion?.costo || 0)
   const total = Number(factura.total || 0)
   const codigoFactura = `F-${String(factura.id).padStart(6, '0')}`
   const cliente = factura.reparacion?.cliente
@@ -153,6 +154,12 @@ export default function DetalleFactura() {
                     </tr>
                   )
                 })}
+                <tr>
+                  <td style={{ fontWeight: 500 }}>Servicio técnico</td>
+                  <td className="num">1</td>
+                  <td className="num">{formatMoneda(costoServicio)}</td>
+                  <td className="num" style={{ fontWeight: 600 }}>{formatMoneda(costoServicio)}</td>
+                </tr>
                 <tr style={{ background: 'var(--c-surface-2)' }}>
                   <td colSpan="3" className="num" style={{ fontWeight: 700, fontSize: 14 }}>Total</td>
                   <td className="num" style={{ fontWeight: 700, fontSize: 14, fontFeatureSettings: '"tnum"' }}>{formatMoneda(total)}</td>

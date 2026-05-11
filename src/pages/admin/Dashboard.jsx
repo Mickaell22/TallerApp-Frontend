@@ -45,9 +45,6 @@ export default function Dashboard() {
           <p className="page-subtitle">Resumen del taller - {hoy}</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary">
-            <Icon name="calendar" size={14} /> Este mes
-          </button>
           <button className="btn btn-primary" onClick={() => navigate('/admin/reparaciones/nueva')}>
             <Icon name="plus" size={14} /> Nueva reparacion
           </button>
