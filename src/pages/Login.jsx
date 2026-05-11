@@ -21,11 +21,11 @@ export default function Login() {
     setCargando(true)
     try {
       const res = await loginService(form)
-      login(res.data.token, res.data.usuario)
+      login(res.data.data.token, res.data.data.usuario)
       const rutas = { administrador: '/admin', tecnico: '/tecnico', cliente: '/cliente' }
-      navigate(rutas[res.data.usuario.rol] || '/')
+      navigate(rutas[res.data.data.usuario.rol] || '/')
     } catch (err) {
-      setError(err.response?.data?.mensaje || 'Credenciales incorrectas')
+      setError(err.response?.data?.error || 'Credenciales incorrectas')
     } finally {
       setCargando(false)
     }

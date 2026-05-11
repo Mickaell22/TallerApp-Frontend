@@ -1,15 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
+import { getUsuarios } from '../../services/usuarioService'
 
-const USUARIOS = [
-  { id: 1, nombre: 'Juan Montoya',   email: 'juan@tallerapp.com',   rol: 'administrador', estado: 'activo' },
-  { id: 2, nombre: 'Carlos Méndez',  email: 'carlos@tallerapp.com', rol: 'tecnico',        estado: 'activo' },
-  { id: 3, nombre: 'Pedro Alvarado', email: 'pedro@tallerapp.com',  rol: 'tecnico',        estado: 'activo' },
-  { id: 4, nombre: 'Laura Sánchez',  email: 'laura@tallerapp.com',  rol: 'tecnico',        estado: 'inactivo' },
-]
-
-const ROL_LABELS = { administrador: 'Administrador', tecnico: 'Técnico' }
+const ROL_LABELS = { administrador: 'Administrador', tecnico: 'Técnico', cliente: 'Cliente' }
 
 export default function Configuracion() {
   const [taller, setTaller] = useState({
@@ -21,14 +15,29 @@ export default function Configuracion() {
   })
 
   const [notif, setNotif] = useState({
-    cambioEstado:   true,
-    stockBajo:      true,
+    cambioEstado:    true,
+    stockBajo:       true,
     nuevaReparacion: false,
-    facturaEmitida: true,
+    facturaEmitida:  true,
   })
 
-  const [usuarios, setUsuarios] = useState(USUARIOS)
+  const [usuarios, setUsuarios] = useState([])
+  const [cargandoUsuarios, setCargandoUsuarios] = useState(true)
   const [tallerGuardado, setTallerGuardado] = useState(false)
+
+  useEffect(() => {
+    async function cargarUsuarios() {
+      try {
+        const res = await getUsuarios()
+        setUsuarios(res.data.data || [])
+      } catch {
+        // Si falla, la tabla queda vacía silenciosamente
+      } finally {
+        setCargandoUsuarios(false)
+      }
+    }
+    cargarUsuarios()
+  }, [])
 
   function handleTaller(e) {
     setTaller({ ...taller, [e.target.name]: e.target.value })
@@ -37,12 +46,6 @@ export default function Configuracion() {
 
   function handleNotif(key) {
     setNotif({ ...notif, [key]: !notif[key] })
-  }
-
-  function toggleEstado(id) {
-    setUsuarios(usuarios.map(u =>
-      u.id === id ? { ...u, estado: u.estado === 'activo' ? 'inactivo' : 'activo' } : u
-    ))
   }
 
   function handleGuardarTaller(e) {
@@ -106,55 +109,47 @@ export default function Configuracion() {
           <div className="card">
             <div className="card-header">
               <h3 className="card-title">Usuarios y roles</h3>
-              <button className="btn btn-primary btn-sm">
-                <Icon name="plus" size={13} /> Agregar usuario
-              </button>
             </div>
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Correo</th>
-                  <th>Rol</th>
-                  <th>Estado</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {usuarios.map(u => (
-                  <tr key={u.id}>
-                    <td style={{ fontWeight: 500 }}>{u.nombre}</td>
-                    <td className="muted">{u.email}</td>
-                    <td>
-                      <span className="pill" style={{
-                        background: u.rol === 'administrador' ? 'var(--c-primary-bg)' : 'var(--c-surface-2)',
-                        color:      u.rol === 'administrador' ? 'var(--c-primary)'    : 'var(--c-text-muted)',
-                      }}>
-                        {ROL_LABELS[u.rol]}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="pill" style={{
-                        background: u.estado === 'activo' ? 'var(--c-success-bg)' : 'var(--c-danger-bg)',
-                        color:      u.estado === 'activo' ? 'var(--c-success)'    : 'var(--c-danger)',
-                      }}>
-                        {u.estado === 'activo' ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-ghost btn-sm">Editar</button>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => toggleEstado(u.id)}
-                        style={{ color: u.estado === 'activo' ? 'var(--c-danger)' : 'var(--c-success)' }}
-                      >
-                        {u.estado === 'activo' ? 'Desactivar' : 'Activar'}
-                      </button>
-                    </td>
+            {cargandoUsuarios ? (
+              <div className="muted" style={{ padding: 32, textAlign: 'center' }}>Cargando usuarios...</div>
+            ) : (
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {usuarios.length === 0 && (
+                    <tr>
+                      <td colSpan="3" style={{ textAlign: 'center', padding: 24 }} className="muted">
+                        Sin usuarios registrados
+                      </td>
+                    </tr>
+                  )}
+                  {usuarios.map(u => (
+                    <tr key={u.id}>
+                      <td style={{ fontWeight: 500 }}>{u.nombre}</td>
+                      <td className="muted">{u.email}</td>
+                      <td>
+                        <span className="pill" style={{
+                          background: u.rol === 'administrador' ? 'var(--c-primary-bg)'
+                                    : u.rol === 'tecnico'       ? 'var(--c-surface-2)'
+                                    :                             'var(--c-accent-soft)',
+                          color:      u.rol === 'administrador' ? 'var(--c-primary)'
+                                    : u.rol === 'tecnico'       ? 'var(--c-text-muted)'
+                                    :                             'var(--c-accent)',
+                        }}>
+                          {ROL_LABELS[u.rol] || u.rol}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
 
         </div>
@@ -192,20 +187,15 @@ export default function Configuracion() {
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end' }}>
-              <button className="btn btn-primary">
-                <Icon name="check" size={14} /> Guardar preferencias
-              </button>
-            </div>
           </div>
 
           {/* Resumen del sistema */}
           <div className="card card-pad" style={{ background: 'var(--c-surface-2)' }}>
             <h3 className="card-title" style={{ marginBottom: 12 }}>Información del sistema</h3>
             <dl className="kv">
-              <dt>Versión</dt>     <dd className="mono">v1.0.0</dd>
-              <dt>Frontend</dt>   <dd>React 18 + Vite</dd>
-              <dt>Backend</dt>    <dd>Node.js + Express</dd>
+              <dt>Versión</dt>       <dd className="mono">v1.0.0</dd>
+              <dt>Frontend</dt>     <dd>React 18 + Vite</dd>
+              <dt>Backend</dt>      <dd>Node.js + Express</dd>
               <dt>Base de datos</dt><dd>PostgreSQL 16</dd>
             </dl>
           </div>

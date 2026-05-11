@@ -1,10 +1,8 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import Icon from '../ui/Icon'
 
 const NAV = [
   { id: 'historial', label: 'Mis reparaciones', path: '/cliente' },
-  { id: 'perfil',    label: 'Mi perfil',         path: '/cliente/perfil' },
 ]
 
 export default function ClientLayout({ children }) {
@@ -16,7 +14,7 @@ export default function ClientLayout({ children }) {
     ? usuario.nombre.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
     : 'C'
 
-  const active = location.pathname === '/cliente' ? 'historial' : 'perfil'
+  const active = 'historial'
 
   function handleLogout() {
     logout()
@@ -43,9 +41,6 @@ export default function ClientLayout({ children }) {
             ))}
           </div>
           <div className="client-nav-actions">
-            <button className="icon-btn">
-              <Icon name="bell" size={16} />
-            </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div className="sidebar-avatar" style={{ background: 'var(--c-primary)', width: 34, height: 34, fontSize: 13 }}>
                 {initials}

@@ -22,6 +22,8 @@ import DetalleTecnico           from './pages/tecnico/DetalleTecnico'
 import HistorialTecnico         from './pages/tecnico/HistorialTecnico'
 import MisReparacionesCliente   from './pages/cliente/MisReparacionesCliente'
 import DetalleReparacionCliente from './pages/cliente/DetalleReparacionCliente'
+import NoAutorizado  from './pages/NoAutorizado'
+import NuevoCliente  from './pages/admin/NuevoCliente'
 
 export default function App() {
   return (
@@ -33,31 +35,34 @@ export default function App() {
         <Route path="/register"           element={<Register />} />
         <Route path="/recuperar-password" element={<RecuperarPassword />} />
 
-        {/* Admin — sin auth hasta tener backend */}
-        <Route path="/admin"                              element={<Dashboard />} />
-        <Route path="/admin/reparaciones"                 element={<Reparaciones />} />
-        <Route path="/admin/reparaciones/nueva"           element={<NuevaReparacion />} />
-        <Route path="/admin/reparaciones/:id"             element={<DetalleReparacion />} />
-        <Route path="/admin/inventario"                   element={<Inventario />} />
-        <Route path="/admin/inventario/nuevo"             element={<NuevoRepuesto />} />
-        <Route path="/admin/inventario/:id/editar"        element={<NuevoRepuesto />} />
-        <Route path="/admin/facturacion"                  element={<Facturacion />} />
-        <Route path="/admin/facturacion/nueva"            element={<NuevaFactura />} />
-        <Route path="/admin/facturacion/:id"              element={<DetalleFactura />} />
-        <Route path="/admin/reportes"                     element={<Reportes />} />
-        <Route path="/admin/clientes"                     element={<Clientes />} />
-        <Route path="/admin/clientes/nuevo"               element={<DetalleCliente />} />
-        <Route path="/admin/clientes/:id"                 element={<DetalleCliente />} />
-        <Route path="/admin/configuracion"                element={<Configuracion />} />
+        {/* Admin */}
+        <Route path="/admin" element={<PrivateRoute roles={['administrador']}><Dashboard /></PrivateRoute>} />
+        <Route path="/admin/reparaciones" element={<PrivateRoute roles={['administrador']}><Reparaciones /></PrivateRoute>} />
+        <Route path="/admin/reparaciones/nueva" element={<PrivateRoute roles={['administrador']}><NuevaReparacion /></PrivateRoute>} />
+        <Route path="/admin/reparaciones/:id" element={<PrivateRoute roles={['administrador']}><DetalleReparacion /></PrivateRoute>} />
+        <Route path="/admin/inventario" element={<PrivateRoute roles={['administrador']}><Inventario /></PrivateRoute>} />
+        <Route path="/admin/inventario/nuevo" element={<PrivateRoute roles={['administrador']}><NuevoRepuesto /></PrivateRoute>} />
+        <Route path="/admin/inventario/:id/editar" element={<PrivateRoute roles={['administrador']}><NuevoRepuesto /></PrivateRoute>} />
+        <Route path="/admin/facturacion" element={<PrivateRoute roles={['administrador']}><Facturacion /></PrivateRoute>} />
+        <Route path="/admin/facturacion/nueva" element={<PrivateRoute roles={['administrador']}><NuevaFactura /></PrivateRoute>} />
+        <Route path="/admin/facturacion/:id" element={<PrivateRoute roles={['administrador']}><DetalleFactura /></PrivateRoute>} />
+        <Route path="/admin/reportes" element={<PrivateRoute roles={['administrador']}><Reportes /></PrivateRoute>} />
+        <Route path="/admin/clientes" element={<PrivateRoute roles={['administrador']}><Clientes /></PrivateRoute>} />
+        <Route path="/admin/clientes/nuevo" element={<PrivateRoute roles={['administrador']}><NuevoCliente /></PrivateRoute>} />
+        <Route path="/admin/clientes/:id" element={<PrivateRoute roles={['administrador']}><DetalleCliente /></PrivateRoute>} />
+        <Route path="/admin/configuracion" element={<PrivateRoute roles={['administrador']}><Configuracion /></PrivateRoute>} />
 
-        {/* Técnico */}
-        <Route path="/tecnico"                            element={<MisReparaciones />} />
-        <Route path="/tecnico/historial"                  element={<HistorialTecnico />} />
-        <Route path="/tecnico/:id"                        element={<DetalleTecnico />} />
+        {/* Tecnico */}
+        <Route path="/tecnico" element={<PrivateRoute roles={['tecnico']}><MisReparaciones /></PrivateRoute>} />
+        <Route path="/tecnico/historial" element={<PrivateRoute roles={['tecnico']}><HistorialTecnico /></PrivateRoute>} />
+        <Route path="/tecnico/:id" element={<PrivateRoute roles={['tecnico']}><DetalleTecnico /></PrivateRoute>} />
+
+        {/* Sin autorización */}
+        <Route path="/no-autorizado" element={<NoAutorizado />} />
 
         {/* Cliente registrado */}
-        <Route path="/cliente"                            element={<MisReparacionesCliente />} />
-        <Route path="/cliente/:id"                        element={<DetalleReparacionCliente />} />
+        <Route path="/cliente" element={<PrivateRoute roles={['cliente']}><MisReparacionesCliente /></PrivateRoute>} />
+        <Route path="/cliente/:id" element={<PrivateRoute roles={['cliente']}><DetalleReparacionCliente /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   )

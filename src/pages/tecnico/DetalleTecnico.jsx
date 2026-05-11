@@ -1,100 +1,95 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
+import { getReparacion, actualizarEstado } from '../../services/reparacionService'
+import { ESTADO_LABELS, estadoCSS, ESTADOS_ORDEN, ESTADO_TITULOS } from '../../utils/estados'
 
-const ESTADO_LABELS = {
-  recibido:    'Recibido',
-  diagnostico: 'En diagnóstico',
-  reparacion:  'En reparación',
-  listo:       'Listo',
-  entregado:   'Entregado',
-}
-
-const ESTADOS = ['recibido', 'diagnostico', 'reparacion', 'listo', 'entregado']
-
-const MOCK = {
-  1: {
-    id: 1, codigo: 'TLR-2026-0148',
-    cliente: 'María González', telefono: '+593 99 123 4567',
-    dispositivo: 'iPhone 13 Pro', falla: 'Pantalla rota tras caída',
-    estado: 'reparacion', fechaIngreso: '02 May 2026', costo: 145000,
-    prioridad: 'high', imei: '35 4823 11 098234 7',
-    timeline: [
-      { titulo: 'Equipo recibido',        fecha: '02 May, 10:24', who: 'Recepción',  done: true },
-      { titulo: 'Diagnóstico iniciado',   fecha: '02 May, 14:10', who: 'Carlos M.',  done: true },
-      { titulo: 'Diagnóstico finalizado', fecha: '02 May, 17:32', who: 'Carlos M.',  done: true, nota: 'Confirmado: rotura de display + digitalizador.' },
-      { titulo: 'Reparación en curso',    fecha: '03 May, 09:45', who: 'Carlos M.',  current: true },
-      { titulo: 'Listo para retirar',     fecha: '—',             done: false },
-    ],
-    repuestos: [
-      { sku: 'PNT-IP13P-OEM', nombre: 'Pantalla iPhone 13 Pro (OEM)', cantidad: 1, costo: 78000 },
-    ],
-  },
-  2: {
-    id: 2, codigo: 'TLR-2026-0147',
-    cliente: 'Juan Pérez', telefono: '+593 98 234 5678',
-    dispositivo: 'Samsung Galaxy A52', falla: 'No carga la batería',
-    estado: 'diagnostico', fechaIngreso: '03 May 2026', costo: 38000,
-    prioridad: 'med', imei: '86 7123 44 211098 3',
-    timeline: [
-      { titulo: 'Equipo recibido',      fecha: '03 May, 09:00', who: 'Recepción', done: true },
-      { titulo: 'Diagnóstico iniciado', fecha: '03 May, 11:30', who: 'Carlos M.', current: true },
-      { titulo: 'Reparación en curso',  fecha: '—', done: false },
-      { titulo: 'Listo para retirar',   fecha: '—', done: false },
-    ],
-    repuestos: [],
-  },
-  4: {
-    id: 4, codigo: 'TLR-2026-0145',
-    cliente: 'Diego Castro', telefono: '+593 97 345 6789',
-    dispositivo: 'iPhone 12', falla: 'Cambio de batería',
-    estado: 'listo', fechaIngreso: '01 May 2026', costo: 52000,
-    prioridad: 'low', imei: '35 1234 56 789012 4',
-    timeline: [
-      { titulo: 'Equipo recibido',        fecha: '01 May, 10:00', who: 'Recepción', done: true },
-      { titulo: 'Diagnóstico iniciado',   fecha: '01 May, 11:00', who: 'Carlos M.', done: true },
-      { titulo: 'Reparación finalizada',  fecha: '01 May, 14:30', who: 'Carlos M.', done: true, nota: 'Batería reemplazada. Ciclo de carga verificado.' },
-      { titulo: 'Listo para retirar',     fecha: '01 May, 14:45', who: 'Carlos M.', done: true },
-    ],
-    repuestos: [
-      { sku: 'BAT-IP12-ORIG', nombre: 'Batería iPhone 12 original', cantidad: 1, costo: 37000 },
-    ],
-  },
-  9: {
-    id: 9, codigo: 'TLR-2026-0140',
-    cliente: 'Valentina Cruz', telefono: '+593 99 456 7890',
-    dispositivo: 'Xiaomi 12T', falla: 'Botón de encendido no responde',
-    estado: 'reparacion', fechaIngreso: '30 Abr 2026', costo: 31000,
-    prioridad: 'med', imei: '86 9988 77 665544 1',
-    timeline: [
-      { titulo: 'Equipo recibido',        fecha: '30 Abr, 15:00', who: 'Recepción', done: true },
-      { titulo: 'Diagnóstico finalizado', fecha: '30 Abr, 17:00', who: 'Carlos M.', done: true, nota: 'Flex del botón power dañado. Requiere reemplazo.' },
-      { titulo: 'Reparación en curso',    fecha: '02 May, 10:00', who: 'Carlos M.', current: true },
-      { titulo: 'Listo para retirar',     fecha: '—', done: false },
-    ],
-    repuestos: [],
-  },
+const ESTADOS_SELECTOR = ['recibido', 'en_diagnostico', 'en_reparacion', 'listo', 'entregado']
+const ESTADO_LABELS_SELECTOR = {
+  recibido:       'Recibido',
+  en_diagnostico: 'En diagnostico',
+  en_reparacion:  'En reparacion',
+  listo:          'Listo',
+  entregado:      'Entregado',
 }
 
 function formatMoneda(n) {
-  return '$' + n.toLocaleString('es-EC')
+  if (!n) return '—'
+  return '$' + Number(n).toLocaleString('es-EC')
+}
+
+function formatFecha(fecha) {
+  if (!fecha) return '—'
+  return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function construirTimeline(estadoActual) {
+  const idx = ESTADOS_ORDEN.indexOf(estadoActual)
+  return ESTADOS_ORDEN.map((e, i) => ({
+    titulo: ESTADO_TITULOS[e] || e,
+    done: i < idx,
+    current: i === idx,
+  }))
 }
 
 export default function DetalleTecnico() {
-  const { id }      = useParams()
-  const navigate    = useNavigate()
-  const reparacion  = MOCK[id]
+  const { id }   = useParams()
+  const navigate = useNavigate()
 
-  const [estado,    setEstado]    = useState(reparacion?.estado || 'recibido')
-  const [nota,      setNota]      = useState('')
-  const [repuestos, setRepuestos] = useState(reparacion?.repuestos || [])
+  const [rep, setRep] = useState(null)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [estado, setEstado] = useState('recibido')
+  const [nota, setNota] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [msgGuardado, setMsgGuardado] = useState('')
 
-  if (!reparacion) {
+  useEffect(() => {
+    async function cargar() {
+      try {
+        const res = await getReparacion(id)
+        const data = res.data.data
+        setRep(data)
+        setEstado(data.estado)
+      } catch (err) {
+        setError(err.response?.data?.error || 'Error al cargar la reparacion')
+      } finally {
+        setCargando(false)
+      }
+    }
+    cargar()
+  }, [id])
+
+  async function handleGuardar() {
+    setGuardando(true)
+    setMsgGuardado('')
+    try {
+      const res = await actualizarEstado(id, { estado, notas: nota || undefined })
+      setRep(res.data.data)
+      setEstado(res.data.data.estado)
+      setNota('')
+      setMsgGuardado('Cambios guardados correctamente')
+    } catch (err) {
+      setMsgGuardado(err.response?.data?.error || 'Error al guardar')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  if (cargando) {
     return (
-      <AdminLayout active="asignadas" title="Reparación no encontrada">
+      <AdminLayout active="asignadas" title="Cargando...">
+        <div className="muted" style={{ padding: 40, textAlign: 'center' }}>Cargando...</div>
+      </AdminLayout>
+    )
+  }
+
+  if (error || !rep) {
+    return (
+      <AdminLayout active="asignadas" title="Reparacion no encontrada">
         <div className="card" style={{ padding: 64, textAlign: 'center' }}>
-          <p className="muted">No se encontró la reparación con ID {id}</p>
+          <p className="muted">{error || `No se encontro la reparacion con ID ${id}`}</p>
           <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={() => navigate('/tecnico')}>
             Volver a mis reparaciones
           </button>
@@ -103,24 +98,26 @@ export default function DetalleTecnico() {
     )
   }
 
-  const total = repuestos.reduce((s, r) => s + r.cantidad * r.costo, 0)
+  const timeline = construirTimeline(rep.estado)
+  const repuestos = rep.repuestos || []
+  const total = repuestos.reduce((s, r) => s + (r.reparacion_repuesto?.cantidad || 1) * Number(r.precio || 0), 0)
 
   return (
-    <AdminLayout active="asignadas" title={reparacion.dispositivo} subtitle={`${reparacion.cliente} • Ingresó ${reparacion.fechaIngreso}`}>
+    <AdminLayout active="asignadas" title={rep.dispositivo} subtitle={`${rep.cliente?.usuario?.nombre || '—'} - Ingreso ${formatFecha(rep.fecha_entrada)}`}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
         <button className="btn btn-ghost btn-sm" onClick={() => navigate('/tecnico')}>
           ← Volver
         </button>
-        <span className="muted small mono">{reparacion.codigo}</span>
+        <span className="muted small mono">{rep.codigo}</span>
       </div>
 
       <div className="page-header">
         <div>
-          <h1 className="page-title">{reparacion.dispositivo}</h1>
-          <p className="page-subtitle">{reparacion.cliente} • Ingresó {reparacion.fechaIngreso}</p>
+          <h1 className="page-title">{rep.dispositivo}</h1>
+          <p className="page-subtitle">{rep.cliente?.usuario?.nombre || '—'} - Ingreso {formatFecha(rep.fecha_entrada)}</p>
         </div>
-        <span className={`pill pill-${estado}`} style={{ fontSize: 13, padding: '6px 14px' }}>
-          {ESTADO_LABELS[estado]}
+        <span className={`pill pill-${estadoCSS(rep.estado)}`} style={{ fontSize: 13, padding: '6px 14px' }}>
+          {ESTADO_LABELS[rep.estado] || rep.estado}
         </span>
       </div>
 
@@ -128,37 +125,28 @@ export default function DetalleTecnico() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           <div className="card card-pad">
-            <h3 className="card-title" style={{ marginBottom: 14 }}>Información del equipo</h3>
+            <h3 className="card-title" style={{ marginBottom: 14 }}>Informacion del equipo</h3>
             <dl className="kv">
-              <dt>Cliente</dt>          <dd>{reparacion.cliente}</dd>
-              <dt>Teléfono</dt>         <dd className="mono">{reparacion.telefono}</dd>
-              <dt>Dispositivo</dt>      <dd>{reparacion.dispositivo}</dd>
-              <dt>Falla reportada</dt>  <dd>{reparacion.falla}</dd>
-              <dt>Prioridad</dt>
-              <dd>
-                <span style={{
-                  fontWeight: 600,
-                  color: reparacion.prioridad === 'high' ? 'var(--c-danger)' : reparacion.prioridad === 'med' ? 'var(--c-warn)' : 'var(--c-success)',
-                }}>
-                  {reparacion.prioridad === 'high' ? 'Alta' : reparacion.prioridad === 'med' ? 'Media' : 'Baja'}
-                </span>
-              </dd>
-              <dt>IMEI</dt>             <dd className="mono">{reparacion.imei}</dd>
-              <dt>Patrón / PIN</dt>     <dd className="muted" style={{ fontStyle: 'italic' }}>Cliente lo informará al retirar</dd>
+              <dt>Cliente</dt>          <dd>{rep.cliente?.usuario?.nombre || '—'}</dd>
+              <dt>Telefono</dt>         <dd className="mono">{rep.cliente?.telefono || '—'}</dd>
+              <dt>Dispositivo</dt>      <dd>{rep.dispositivo}</dd>
+              <dt>Falla reportada</dt>  <dd>{rep.problema}</dd>
+              <dt>Notas</dt>            <dd className="muted">{rep.notas || '—'}</dd>
+              <dt>Patron / PIN</dt>     <dd className="muted" style={{ fontStyle: 'italic' }}>Cliente lo informara al retirar</dd>
             </dl>
           </div>
 
           <div className="card card-pad">
             <h3 className="card-title" style={{ marginBottom: 14 }}>Actualizar estado</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6, marginBottom: 16 }}>
-              {ESTADOS.map(e => (
+              {ESTADOS_SELECTOR.map(e => (
                 <button
                   key={e}
                   className={'filter-chip' + (estado === e ? ' active' : '')}
                   onClick={() => setEstado(e)}
                   style={{ justifyContent: 'center', padding: '9px 6px', fontSize: 11.5 }}
                 >
-                  {ESTADO_LABELS[e]}
+                  {ESTADO_LABELS_SELECTOR[e]}
                 </button>
               ))}
             </div>
@@ -166,14 +154,19 @@ export default function DetalleTecnico() {
             <textarea
               className="input"
               rows="3"
-              placeholder="Ej: Pantalla cambiada con éxito. Se recomienda usar protector..."
+              placeholder="Ej: Pantalla cambiada con exito. Se recomienda usar protector..."
               value={nota}
               onChange={e => setNota(e.target.value)}
             />
+            {msgGuardado && (
+              <div style={{ marginTop: 8, fontSize: 13, color: msgGuardado.includes('Error') ? 'var(--c-danger)' : 'var(--c-success)' }}>
+                {msgGuardado}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 10, marginTop: 14, justifyContent: 'flex-end' }}>
-              <button className="btn btn-secondary">Cancelar</button>
-              <button className="btn btn-primary">
-                <Icon name="check" size={14} /> Guardar cambios
+              <button className="btn btn-secondary" onClick={() => { setEstado(rep.estado); setNota('') }}>Cancelar</button>
+              <button className="btn btn-primary" onClick={handleGuardar} disabled={guardando}>
+                <Icon name="check" size={14} /> {guardando ? 'Guardando...' : 'Guardar cambios'}
               </button>
             </div>
           </div>
@@ -181,51 +174,40 @@ export default function DetalleTecnico() {
           <div className="card">
             <div className="card-header">
               <h3 className="card-title">Repuestos utilizados</h3>
-              <button className="btn btn-secondary btn-sm">
-                <Icon name="plus" size={13} /> Agregar repuesto
-              </button>
             </div>
             <table className="tbl">
               <thead>
                 <tr>
-                  <th>SKU</th>
                   <th>Repuesto</th>
                   <th className="num">Cant.</th>
-                  <th className="num">Costo unit.</th>
+                  <th className="num">Precio unit.</th>
                   <th className="num">Subtotal</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {repuestos.length === 0 && (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', padding: 24 }} className="muted">
-                      No hay repuestos registrados aún
+                    <td colSpan="4" style={{ textAlign: 'center', padding: 24 }} className="muted">
+                      No hay repuestos registrados aun
                     </td>
                   </tr>
                 )}
-                {repuestos.map((r, i) => (
-                  <tr key={i}>
-                    <td className="mono small muted">{r.sku}</td>
-                    <td style={{ fontWeight: 500 }}>{r.nombre}</td>
-                    <td className="num">{r.cantidad}</td>
-                    <td className="num">{formatMoneda(r.costo)}</td>
-                    <td className="num" style={{ fontWeight: 600 }}>{formatMoneda(r.cantidad * r.costo)}</td>
-                    <td>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => setRepuestos(repuestos.filter((_, j) => j !== i))}
-                      >
-                        Quitar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {repuestos.map((r, i) => {
+                  const cant = r.reparacion_repuesto?.cantidad || 1
+                  const precio = Number(r.precio || 0)
+                  return (
+                    <tr key={i}>
+                      <td style={{ fontWeight: 500 }}>{r.nombre}</td>
+                      <td className="num">{cant}</td>
+                      <td className="num">{formatMoneda(precio)}</td>
+                      <td className="num" style={{ fontWeight: 600 }}>{formatMoneda(cant * precio)}</td>
+                    </tr>
+                  )
+                })}
                 {repuestos.length > 0 && (
                   <tr style={{ background: 'var(--c-surface-2)' }}>
-                    <td colSpan="4" className="num" style={{ fontWeight: 600 }}>Total repuestos</td>
+                    <td colSpan="3" className="num" style={{ fontWeight: 600 }}>Total repuestos</td>
                     <td className="num" style={{ fontWeight: 700, fontSize: 14 }}>{formatMoneda(total)}</td>
-                    <td></td>
                   </tr>
                 )}
               </tbody>
@@ -237,36 +219,35 @@ export default function DetalleTecnico() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           <div className="card card-pad">
-            <h3 className="card-title" style={{ marginBottom: 18 }}>Línea de tiempo</h3>
-            {reparacion.timeline.map((s, i) => (
+            <h3 className="card-title" style={{ marginBottom: 18 }}>Linea de tiempo</h3>
+            {timeline.map((s, i) => (
               <div key={i} className={`timeline-step${s.done ? ' done' : s.current ? ' current' : ''}`}>
                 <div className="timeline-dot">
                   {s.done && <Icon name="check" size={12} />}
                 </div>
                 <div>
                   <div className="timeline-title">{s.titulo}</div>
-                  <div className="timeline-meta">{s.fecha}{s.who && ` • ${s.who}`}</div>
-                  {s.nota && (
-                    <div className="muted small" style={{ marginTop: 6, padding: '8px 10px', background: 'var(--c-surface-2)', borderRadius: 6, fontSize: 12 }}>
-                      {s.nota}
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
           </div>
 
           <div className="card card-pad">
-            <h3 className="card-title" style={{ marginBottom: 14 }}>Acciones rápidas</h3>
+            <h3 className="card-title" style={{ marginBottom: 14 }}>Acciones rapidas</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ justifyContent: 'flex-start' }}
+                onClick={() => alert(`Mensaje de WhatsApp enviado a ${rep?.cliente?.telefono || rep?.cliente?.usuario?.nombre || 'el cliente'}`)}
+              >
                 <Icon name="phone" size={14} /> Llamar al cliente
               </button>
-              <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>
-                <Icon name="bell" size={14} /> Enviar notificación
-              </button>
-              <button className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>
-                <Icon name="receipt" size={14} /> Generar factura
+              <button
+                className="btn btn-secondary"
+                style={{ justifyContent: 'flex-start' }}
+                onClick={() => alert(`Notificación enviada a ${rep?.cliente?.usuario?.nombre || 'el cliente'} por WhatsApp`)}
+              >
+                <Icon name="bell" size={14} /> Enviar notificacion
               </button>
             </div>
           </div>

@@ -1,55 +1,98 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
-
-const FACTURAS = [
-  { id: 1, codigo: 'F-2026-0089', cliente: 'Camila Ortiz',   fecha: '04 May 2026', concepto: 'Cambio cámara Samsung S22',              monto: 67000,  estado: 'Pagada' },
-  { id: 2, codigo: 'F-2026-0088', cliente: 'Bruno Suárez',   fecha: '03 May 2026', concepto: 'Reparación daño líquido iPhone XR',       monto: 89000,  estado: 'Pagada' },
-  { id: 3, codigo: 'F-2026-0087', cliente: 'Diego Castro',   fecha: '02 May 2026', concepto: 'Cambio batería iPhone 12',                monto: 52000,  estado: 'Pagada' },
-  { id: 4, codigo: 'F-2026-0086', cliente: 'Tomás Aguilar',  fecha: '01 May 2026', concepto: 'Pantalla iPhone 14',                     monto: 175000, estado: 'Pendiente' },
-  { id: 5, codigo: 'F-2026-0085', cliente: 'Patricia Núñez', fecha: '30 Abr 2026', concepto: 'Conector carga Motorola G72',             monto: 26000,  estado: 'Pagada' },
-  { id: 6, codigo: 'F-2026-0084', cliente: 'Andrés Torres',  fecha: '28 Abr 2026', concepto: 'Diagnóstico + limpieza Samsung A12',      monto: 8500,   estado: 'Pagada' },
-]
+import { getFacturas, downloadPDF } from '../../services/facturaService'
+import { descargarCSV } from '../../utils/exportCSV'
 
 const FILTROS = [
-  { id: 'todas',      label: 'Todas' },
-  { id: 'Pagada',     label: 'Pagadas' },
-  { id: 'Pendiente',  label: 'Pendientes' },
+  { id: 'todas',     label: 'Todas' },
+  { id: 'pagado',    label: 'Pagadas' },
+  { id: 'pendiente', label: 'Pendientes' },
 ]
 
 function formatMoneda(n) {
-  return '$' + n.toLocaleString('es-EC')
+  if (!n) return '—'
+  return '$' + Number(n).toLocaleString('es-EC')
+}
+
+function formatFecha(fecha) {
+  if (!fecha) return '—'
+  return new Date(fecha).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function estadoPago(estado) {
+  return estado === 'pagado' ? 'Pagada' : 'Pendiente'
 }
 
 export default function Facturacion() {
   const navigate = useNavigate()
   const [filtro, setFiltro] = useState('todas')
   const [search, setSearch] = useState('')
+  const [facturas, setFacturas] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
 
-  const totalFacturado = FACTURAS.reduce((s, f) => s + f.monto, 0)
-  const totalPagado    = FACTURAS.filter(f => f.estado === 'Pagada').reduce((s, f) => s + f.monto, 0)
-  const totalPendiente = FACTURAS.filter(f => f.estado === 'Pendiente').reduce((s, f) => s + f.monto, 0)
-  const countPagadas   = FACTURAS.filter(f => f.estado === 'Pagada').length
+  useEffect(() => {
+    async function cargar() {
+      try {
+        const res = await getFacturas()
+        setFacturas(res.data.data || [])
+      } catch (err) {
+        setError(err.response?.data?.error || 'Error al cargar facturas')
+      } finally {
+        setCargando(false)
+      }
+    }
+    cargar()
+  }, [])
 
-  const lista = FACTURAS.filter(f => {
-    if (filtro !== 'todas' && f.estado !== filtro) return false
+  const totalFacturado = facturas.reduce((s, f) => s + Number(f.total || 0), 0)
+  const totalPagado    = facturas.filter(f => f.estado_pago === 'pagado').reduce((s, f) => s + Number(f.total || 0), 0)
+  const totalPendiente = facturas.filter(f => f.estado_pago === 'pendiente').reduce((s, f) => s + Number(f.total || 0), 0)
+  const countPagadas   = facturas.filter(f => f.estado_pago === 'pagado').length
+
+  const lista = facturas.filter(f => {
+    if (filtro !== 'todas' && f.estado_pago !== filtro) return false
     if (search) {
       const q = search.toLowerCase()
-      if (!(f.codigo + f.cliente + f.concepto).toLowerCase().includes(q)) return false
+      const cliente = f.reparacion?.cliente?.usuario?.nombre || ''
+      if (!(`${f.id}` + cliente).toLowerCase().includes(q)) return false
     }
     return true
   })
 
+  async function handleDescarga(e, facturaId) {
+    e.stopPropagation()
+    try {
+      const res = await downloadPDF(facturaId)
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `factura-${facturaId}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Error al descargar el PDF')
+    }
+  }
+
   return (
-    <AdminLayout active="facturacion" title="Facturación" subtitle={`${FACTURAS.length} facturas emitidas en mayo`}>
+    <AdminLayout active="facturacion" title="Facturacion" subtitle={`${facturas.length} facturas emitidas`}>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Facturación</h1>
-          <p className="page-subtitle">{FACTURAS.length} facturas emitidas en mayo</p>
+          <h1 className="page-title">Facturacion</h1>
+          <p className="page-subtitle">{facturas.length} facturas emitidas</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={() => descargarCSV(
+            facturas.map(f => ({
+              'N Factura': `F-${String(f.id).padStart(6, '0')}`,
+              Cliente: f.reparacion?.cliente?.usuario?.nombre || '',
+              Fecha: f.fecha || '',
+              Estado: f.estado_pago === 'pagado' ? 'Pagada' : 'Pendiente',
+              'Total ($)': f.total,
+            })), 'facturas.csv')}>
             <Icon name="download" size={14} /> Exportar todas
           </button>
           <button className="btn btn-primary" onClick={() => navigate('/admin/facturacion/nueva')}>
@@ -58,12 +101,14 @@ export default function Facturacion() {
         </div>
       </div>
 
+      {error && <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>}
+
       <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 16 }}>
         <div className="stat-card">
           <div className="stat-card-icon green"><Icon name="receipt" size={17} /></div>
-          <div className="stat-card-label">Total facturado (mayo)</div>
+          <div className="stat-card-label">Total facturado</div>
           <div className="stat-card-value">{formatMoneda(totalFacturado)}</div>
-          <div className="stat-card-delta"><Icon name="arrowUp" size={11} />+23% vs abril</div>
+          <div className="stat-card-delta"><Icon name="arrowUp" size={11} />Acumulado</div>
         </div>
         <div className="stat-card">
           <div className="stat-card-icon" style={{ background: 'var(--c-primary-bg)', color: 'var(--c-primary)' }}>
@@ -77,7 +122,7 @@ export default function Facturacion() {
           <div className="stat-card-icon"><Icon name="clock" size={17} /></div>
           <div className="stat-card-label">Pendientes de cobro</div>
           <div className="stat-card-value">{formatMoneda(totalPendiente)}</div>
-          <div className="stat-card-delta down">1 factura pendiente</div>
+          <div className="stat-card-delta down">{facturas.length - countPagadas} facturas pendientes</div>
         </div>
       </div>
 
@@ -86,7 +131,7 @@ export default function Facturacion() {
           <div className="search">
             <Icon name="search" size={14} />
             <input
-              placeholder="Buscar factura, cliente o concepto..."
+              placeholder="Buscar factura o cliente..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -100,61 +145,68 @@ export default function Facturacion() {
               >
                 {f.label}
                 {f.id === 'todas' && (
-                  <span style={{ opacity: .7, marginLeft: 4 }}>{FACTURAS.length}</span>
+                  <span style={{ opacity: .7, marginLeft: 4 }}>{facturas.length}</span>
                 )}
               </button>
             ))}
           </div>
         </div>
 
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>N° Factura</th>
-              <th>Cliente</th>
-              <th>Fecha</th>
-              <th>Concepto</th>
-              <th>Estado</th>
-              <th className="num">Monto</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.map(f => (
-              <tr
-                key={f.id}
-                style={{ cursor: 'pointer' }}
-                onClick={() => navigate(`/admin/facturacion/${f.id}`)}
-              >
-                <td className="mono">{f.codigo}</td>
-                <td style={{ fontWeight: 500 }}>{f.cliente}</td>
-                <td className="muted">{f.fecha}</td>
-                <td className="muted" style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {f.concepto}
-                </td>
-                <td>
-                  <span className="pill" style={{
-                    background: f.estado === 'Pagada' ? 'var(--c-success-bg)' : 'var(--c-warn-bg)',
-                    color:      f.estado === 'Pagada' ? 'var(--c-success)'    : 'var(--c-warn)',
-                  }}>
-                    {f.estado}
-                  </span>
-                </td>
-                <td className="num" style={{ fontWeight: 600, fontFeatureSettings: '"tnum"' }}>
-                  {formatMoneda(f.monto)}
-                </td>
-                <td>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={e => { e.stopPropagation(); }}
-                  >
-                    <Icon name="download" size={13} /> PDF
-                  </button>
-                </td>
+        {cargando ? (
+          <div className="muted" style={{ padding: 40, textAlign: 'center' }}>Cargando...</div>
+        ) : (
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>N Factura</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th className="num">Total</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {lista.length === 0 && (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: 32 }} className="muted">
+                    No hay facturas
+                  </td>
+                </tr>
+              )}
+              {lista.map(f => (
+                <tr
+                  key={f.id}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => navigate(`/admin/facturacion/${f.id}`)}
+                >
+                  <td className="mono">F-{String(f.id).padStart(6, '0')}</td>
+                  <td style={{ fontWeight: 500 }}>{f.reparacion?.cliente?.usuario?.nombre || '—'}</td>
+                  <td className="muted">{formatFecha(f.fecha)}</td>
+                  <td>
+                    <span className="pill" style={{
+                      background: f.estado_pago === 'pagado' ? 'var(--c-success-bg)' : 'var(--c-warn-bg)',
+                      color:      f.estado_pago === 'pagado' ? 'var(--c-success)'    : 'var(--c-warn)',
+                    }}>
+                      {estadoPago(f.estado_pago)}
+                    </span>
+                  </td>
+                  <td className="num" style={{ fontWeight: 600, fontFeatureSettings: '"tnum"' }}>
+                    {formatMoneda(f.total)}
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={e => handleDescarga(e, f.id)}
+                    >
+                      <Icon name="download" size={13} /> PDF
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </AdminLayout>
   )

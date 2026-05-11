@@ -1,46 +1,93 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
-
-const REPUESTOS = [
-  { id: 1, sku: 'PNT-IP13P-OEM', nombre: 'Pantalla iPhone 13 Pro (OEM)',    categoria: 'Pantallas',   stock: 2,  minimo: 5,  costo: 78000, ubicacion: 'A-12' },
-  { id: 2, sku: 'BAT-IP12-ORIG',  nombre: 'Batería iPhone 12 original',      categoria: 'Baterías',    stock: 14, minimo: 6,  costo: 22000, ubicacion: 'B-04' },
-  { id: 3, sku: 'PNT-SAMA52',     nombre: 'Pantalla Samsung A52',            categoria: 'Pantallas',   stock: 1,  minimo: 4,  costo: 41000, ubicacion: 'A-08' },
-  { id: 4, sku: 'CON-USBC-XM',   nombre: 'Conector carga USB-C Xiaomi',     categoria: 'Conectores',  stock: 22, minimo: 10, costo: 4500,  ubicacion: 'C-01' },
-  { id: 5, sku: 'PNT-IP14',       nombre: 'Pantalla iPhone 14',              categoria: 'Pantallas',   stock: 6,  minimo: 4,  costo: 92000, ubicacion: 'A-15' },
-  { id: 6, sku: 'BAT-SAM-S22',   nombre: 'Batería Samsung S22',             categoria: 'Baterías',    stock: 3,  minimo: 5,  costo: 18000, ubicacion: 'B-07' },
-  { id: 7, sku: 'CAM-IP13',       nombre: 'Módulo cámara iPhone 13',         categoria: 'Cámaras',     stock: 8,  minimo: 3,  costo: 34000, ubicacion: 'D-02' },
-  { id: 8, sku: 'ALT-IP11',       nombre: 'Altavoz iPhone 11',               categoria: 'Audio',       stock: 0,  minimo: 4,  costo: 6800,  ubicacion: 'E-09' },
-]
+import { getRepuesto, createRepuesto, updateRepuesto } from '../../services/repuestoService'
 
 export default function NuevoRepuesto() {
   const navigate  = useNavigate()
   const { id }    = useParams()
-  const existente = id ? REPUESTOS.find(r => r.id === Number(id)) : null
-  const esEdicion = Boolean(existente)
+  const esEdicion = Boolean(id)
 
   const [form, setForm] = useState({
-    sku:       existente?.sku       ?? '',
-    nombre:    existente?.nombre    ?? '',
-    categoria: existente?.categoria ?? '',
-    stock:     existente?.stock     ?? '',
-    minimo:    existente?.minimo    ?? '',
-    costo:     existente?.costo     ?? '',
-    ubicacion: existente?.ubicacion ?? '',
+    sku:       '',
+    nombre:    '',
+    categoria: '',
+    stock:     '',
+    minimo:    '',
+    costo:     '',
+    ubicacion: '',
   })
+  const [cargando, setCargando] = useState(esEdicion)
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!esEdicion) return
+    async function cargar() {
+      try {
+        const res = await getRepuesto(id)
+        const r = res.data.data
+        setForm({
+          sku:       r.sku       || '',
+          nombre:    r.nombre    || '',
+          categoria: r.categoria || '',
+          stock:     r.stock     ?? '',
+          minimo:    r.stock_minimo ?? '',
+          costo:     r.precio    || '',
+          ubicacion: r.ubicacion || '',
+        })
+      } catch (err) {
+        setError(err.response?.data?.error || 'Error al cargar repuesto')
+      } finally {
+        setCargando(false)
+      }
+    }
+    cargar()
+  }, [id, esEdicion])
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    navigate('/admin/inventario')
+    setError('')
+    setGuardando(true)
+    const datos = {
+      nombre:      form.nombre,
+      descripcion: '',
+      stock:       Number(form.stock),
+      stock_minimo: Number(form.minimo),
+      precio:      Number(form.costo),
+      sku:         form.sku || undefined,
+      categoria:   form.categoria || undefined,
+      ubicacion:   form.ubicacion || undefined,
+    }
+    try {
+      if (esEdicion) {
+        await updateRepuesto(id, datos)
+      } else {
+        await createRepuesto(datos)
+      }
+      navigate('/admin/inventario')
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al guardar repuesto')
+    } finally {
+      setGuardando(false)
+    }
   }
 
-  const titulo   = esEdicion ? 'Editar repuesto' : 'Agregar repuesto'
-  const subtitulo = esEdicion ? `Modificando ${existente.nombre}` : 'Registrar nuevo repuesto en inventario'
+  const titulo    = esEdicion ? 'Editar repuesto' : 'Agregar repuesto'
+  const subtitulo = esEdicion ? `Modificando ${form.nombre || '...'}` : 'Registrar nuevo repuesto en inventario'
+
+  if (cargando) {
+    return (
+      <AdminLayout active="inventario" title={titulo} subtitle={subtitulo}>
+        <div className="muted" style={{ padding: 40, textAlign: 'center' }}>Cargando...</div>
+      </AdminLayout>
+    )
+  }
 
   return (
     <AdminLayout active="inventario" title={titulo} subtitle={subtitulo}>
@@ -50,13 +97,15 @@ export default function NuevoRepuesto() {
         </button>
       </div>
 
+      {error && <div className="auth-error" style={{ marginBottom: 16 }}>{error}</div>}
+
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16, alignItems: 'start' }}>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             <div className="card card-pad">
-              <h3 className="card-title" style={{ marginBottom: 16 }}>Información del repuesto</h3>
+              <h3 className="card-title" style={{ marginBottom: 16 }}>Informacion del repuesto</h3>
               <div className="field">
                 <label className="label">Nombre</label>
                 <input
@@ -77,24 +126,23 @@ export default function NuevoRepuesto() {
                     value={form.sku}
                     onChange={handleChange}
                     placeholder="Ej: PNT-IP13P-OEM"
-                    required
                   />
                 </div>
                 <div className="field">
-                  <label className="label">Categoría</label>
-                  <select className="input" name="categoria" value={form.categoria} onChange={handleChange} required>
+                  <label className="label">Categoria</label>
+                  <select className="input" name="categoria" value={form.categoria} onChange={handleChange}>
                     <option value="">Seleccionar...</option>
                     <option>Pantallas</option>
-                    <option>Baterías</option>
+                    <option>Baterias</option>
                     <option>Conectores</option>
-                    <option>Cámaras</option>
+                    <option>Camaras</option>
                     <option>Audio</option>
                     <option>Otro</option>
                   </select>
                 </div>
               </div>
               <div className="field">
-                <label className="label">Ubicación en bodega</label>
+                <label className="label">Ubicacion en bodega</label>
                 <input
                   className="input"
                   name="ubicacion"
@@ -122,7 +170,7 @@ export default function NuevoRepuesto() {
                   />
                 </div>
                 <div className="field">
-                  <label className="label">Stock mínimo</label>
+                  <label className="label">Stock minimo</label>
                   <input
                     className="input"
                     type="number"
@@ -136,7 +184,7 @@ export default function NuevoRepuesto() {
                 </div>
               </div>
               <div className="field">
-                <label className="label">Costo unitario ($)</label>
+                <label className="label">Precio unitario ($)</label>
                 <input
                   className="input"
                   type="number"
@@ -145,6 +193,7 @@ export default function NuevoRepuesto() {
                   onChange={handleChange}
                   placeholder="0"
                   min="0"
+                  step="0.01"
                   required
                 />
               </div>
@@ -159,10 +208,10 @@ export default function NuevoRepuesto() {
               <dl className="kv">
                 <dt>Nombre</dt>    <dd>{form.nombre    || '—'}</dd>
                 <dt>SKU</dt>       <dd className="mono">{form.sku       || '—'}</dd>
-                <dt>Categoría</dt> <dd>{form.categoria || '—'}</dd>
-                <dt>Ubicación</dt> <dd className="mono">{form.ubicacion || '—'}</dd>
-                <dt>Stock</dt>     <dd>{form.stock !== '' ? `${form.stock} u. (mín ${form.minimo || 0})` : '—'}</dd>
-                <dt>Costo</dt>     <dd>{form.costo !== '' ? '$' + Number(form.costo).toLocaleString('es-EC') : '—'}</dd>
+                <dt>Categoria</dt> <dd>{form.categoria || '—'}</dd>
+                <dt>Ubicacion</dt> <dd className="mono">{form.ubicacion || '—'}</dd>
+                <dt>Stock</dt>     <dd>{form.stock !== '' ? `${form.stock} u. (min ${form.minimo || 0})` : '—'}</dd>
+                <dt>Precio</dt>    <dd>{form.costo !== '' ? '$' + Number(form.costo).toLocaleString('es-EC') : '—'}</dd>
               </dl>
             </div>
 
@@ -179,7 +228,7 @@ export default function NuevoRepuesto() {
                 alignItems: 'center',
               }}>
                 <Icon name="alert" size={14} />
-                El stock ingresado es menor al mínimo. Se generará una alerta.
+                El stock ingresado es menor al minimo. Se generara una alerta.
               </div>
             )}
 
@@ -192,8 +241,8 @@ export default function NuevoRepuesto() {
               >
                 Cancelar
               </button>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                <Icon name="check" size={14} /> {esEdicion ? 'Guardar cambios' : 'Agregar repuesto'}
+              <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={guardando}>
+                <Icon name="check" size={14} /> {guardando ? 'Guardando...' : (esEdicion ? 'Guardar cambios' : 'Agregar repuesto')}
               </button>
             </div>
 

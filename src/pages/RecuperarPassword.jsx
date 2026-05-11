@@ -17,7 +17,7 @@ export default function RecuperarPassword() {
       await recuperarPassword(email)
       setEnviado(true)
     } catch (err) {
-      setError(err.response?.data?.mensaje || 'No se pudo enviar el correo')
+      setError(err.response?.data?.error || 'No se pudo enviar el correo')
     } finally {
       setCargando(false)
     }
