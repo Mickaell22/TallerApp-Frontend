@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
 import { getReporteReparaciones, getReporteIngresos, getReporteInventario } from '../../services/reporteService'
@@ -64,22 +64,25 @@ export default function Reportes() {
     cargar()
   }, [desde, hasta])
 
-  const porEstado = datosRep?.por_estado || {}
-  const totalEstado = Object.values(porEstado).reduce((s, v) => s + v, 0)
-  const estadosEntradas = Object.entries(porEstado)
+  const { porEstado, totalEstado, estadosEntradas } = useMemo(() => {
+    const porEstado = datosRep?.por_estado || {}
+    const totalEstado = Object.values(porEstado).reduce((s, v) => s + v, 0)
+    const estadosEntradas = Object.entries(porEstado)
+    return { porEstado, totalEstado, estadosEntradas }
+  }, [datosRep])
 
-  const repuestosBajo = (datosInv || []).filter(r => r.stock < r.stock_minimo)
-  const repuestosAgotados = (datosInv || []).filter(r => r.stock === 0)
-
-  const categoriasMap = {}
-  ;(datosInv || []).forEach(r => {
-    const cat = r.categoria || 'Sin categoria'
-    if (!categoriasMap[cat]) categoriasMap[cat] = { total: 0, bajo: 0, agotado: 0 }
-    categoriasMap[cat].total++
-    if (r.stock < r.stock_minimo) categoriasMap[cat].bajo++
-    if (r.stock === 0) categoriasMap[cat].agotado++
-  })
-  const categorias = Object.entries(categoriasMap).map(([cat, v]) => ({ categoria: cat, ...v }))
+  const categorias = useMemo(() => {
+    const inv = datosInv || []
+    const map = {}
+    inv.forEach(r => {
+      const cat = r.categoria || 'Sin categoria'
+      if (!map[cat]) map[cat] = { total: 0, bajo: 0, agotado: 0 }
+      map[cat].total++
+      if (r.stock < r.stock_minimo) map[cat].bajo++
+      if (r.stock === 0) map[cat].agotado++
+    })
+    return Object.entries(map).map(([cat, v]) => ({ categoria: cat, ...v }))
+  }, [datosInv])
 
   return (
     <AdminLayout active="reportes" title="Reportes" subtitle="Analisis del periodo seleccionado">

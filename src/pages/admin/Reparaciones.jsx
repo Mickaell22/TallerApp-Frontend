@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
@@ -47,15 +47,17 @@ export default function Reparaciones() {
     cargar()
   }, [])
 
-  const filtradas = lista.filter(r => {
-    if (filtro !== 'todos' && r.estado !== filtro) return false
-    if (search) {
-      const q = search.toLowerCase()
-      const cliente = r.cliente?.usuario?.nombre || ''
-      if (!(r.codigo + cliente + r.dispositivo + r.problema).toLowerCase().includes(q)) return false
-    }
-    return true
-  })
+  const filtradas = useMemo(() => {
+    return lista.filter(r => {
+      if (filtro !== 'todos' && r.estado !== filtro) return false
+      if (search) {
+        const q = search.toLowerCase()
+        const cliente = r.cliente?.usuario?.nombre || ''
+        if (!(r.codigo + cliente + r.dispositivo + r.problema).toLowerCase().includes(q)) return false
+      }
+      return true
+    })
+  }, [lista, filtro, search])
 
   return (
     <AdminLayout active="reparaciones" title="Reparaciones" subtitle={`${filtradas.length} ordenes de servicio`}>
