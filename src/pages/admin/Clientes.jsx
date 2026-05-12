@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
@@ -31,11 +31,13 @@ export default function Clientes() {
     cargar()
   }, [])
 
-  const lista = clientes.filter(c => {
-    if (!search) return true
+  const lista = useMemo(() => {
+    if (!search) return clientes
     const q = search.toLowerCase()
-    return ((c.usuario?.nombre || '') + (c.telefono || '') + (c.usuario?.email || '')).toLowerCase().includes(q)
-  })
+    return clientes.filter(c =>
+      ((c.usuario?.nombre || '') + (c.telefono || '') + (c.usuario?.email || '')).toLowerCase().includes(q)
+    )
+  }, [clientes, search])
 
   return (
     <AdminLayout active="clientes" title="Clientes" subtitle={`${clientes.length} clientes registrados`}>

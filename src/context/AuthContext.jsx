@@ -2,17 +2,31 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const AuthContext = createContext(null)
 
+function tokenExpirado(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp * 1000 < Date.now()
+  } catch {
+    return true
+  }
+}
+
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null)
-  const [token, setToken] = useState(localStorage.getItem('token'))
+  const [token, setToken] = useState(null)
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
     const tokenGuardado = localStorage.getItem('token')
     const usuarioGuardado = localStorage.getItem('usuario')
     if (tokenGuardado && usuarioGuardado) {
-      setToken(tokenGuardado)
-      setUsuario(JSON.parse(usuarioGuardado))
+      if (tokenExpirado(tokenGuardado)) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('usuario')
+      } else {
+        setToken(tokenGuardado)
+        setUsuario(JSON.parse(usuarioGuardado))
+      }
     }
     setCargando(false)
   }, [])

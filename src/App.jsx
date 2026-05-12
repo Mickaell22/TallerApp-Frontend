@@ -1,33 +1,36 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import PrivateRoute from './routes/PrivateRoute'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import RecuperarPassword from './pages/RecuperarPassword'
-import PaginaPublica    from './pages/PaginaPublica'
-import Configuracion    from './pages/admin/Configuracion'
-import Dashboard         from './pages/admin/Dashboard'
-import Reparaciones      from './pages/admin/Reparaciones'
-import DetalleReparacion from './pages/admin/DetalleReparacion'
-import NuevaReparacion   from './pages/admin/NuevaReparacion'
-import Inventario        from './pages/admin/Inventario'
-import NuevoRepuesto     from './pages/admin/NuevoRepuesto'
-import Facturacion       from './pages/admin/Facturacion'
-import Reportes          from './pages/admin/Reportes'
-import DetalleFactura    from './pages/admin/DetalleFactura'
-import NuevaFactura      from './pages/admin/NuevaFactura'
-import Clientes            from './pages/admin/Clientes'
-import DetalleCliente      from './pages/admin/DetalleCliente'
-import MisReparaciones          from './pages/tecnico/MisReparaciones'
-import DetalleTecnico           from './pages/tecnico/DetalleTecnico'
-import HistorialTecnico         from './pages/tecnico/HistorialTecnico'
-import MisReparacionesCliente   from './pages/cliente/MisReparacionesCliente'
-import DetalleReparacionCliente from './pages/cliente/DetalleReparacionCliente'
-import NoAutorizado  from './pages/NoAutorizado'
-import NuevoCliente  from './pages/admin/NuevoCliente'
+
+const Login                     = lazy(() => import('./pages/Login'))
+const Register                  = lazy(() => import('./pages/Register'))
+const RecuperarPassword         = lazy(() => import('./pages/RecuperarPassword'))
+const PaginaPublica             = lazy(() => import('./pages/PaginaPublica'))
+const NoAutorizado              = lazy(() => import('./pages/NoAutorizado'))
+const Dashboard                 = lazy(() => import('./pages/admin/Dashboard'))
+const Reparaciones              = lazy(() => import('./pages/admin/Reparaciones'))
+const DetalleReparacion         = lazy(() => import('./pages/admin/DetalleReparacion'))
+const NuevaReparacion           = lazy(() => import('./pages/admin/NuevaReparacion'))
+const Inventario                = lazy(() => import('./pages/admin/Inventario'))
+const NuevoRepuesto             = lazy(() => import('./pages/admin/NuevoRepuesto'))
+const Facturacion               = lazy(() => import('./pages/admin/Facturacion'))
+const Reportes                  = lazy(() => import('./pages/admin/Reportes'))
+const DetalleFactura            = lazy(() => import('./pages/admin/DetalleFactura'))
+const NuevaFactura              = lazy(() => import('./pages/admin/NuevaFactura'))
+const Clientes                  = lazy(() => import('./pages/admin/Clientes'))
+const DetalleCliente            = lazy(() => import('./pages/admin/DetalleCliente'))
+const NuevoCliente              = lazy(() => import('./pages/admin/NuevoCliente'))
+const Configuracion             = lazy(() => import('./pages/admin/Configuracion'))
+const MisReparaciones           = lazy(() => import('./pages/tecnico/MisReparaciones'))
+const DetalleTecnico            = lazy(() => import('./pages/tecnico/DetalleTecnico'))
+const HistorialTecnico          = lazy(() => import('./pages/tecnico/HistorialTecnico'))
+const MisReparacionesCliente    = lazy(() => import('./pages/cliente/MisReparacionesCliente'))
+const DetalleReparacionCliente  = lazy(() => import('./pages/cliente/DetalleReparacionCliente'))
 
 export default function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<div className="muted" style={{ padding: 40, textAlign: 'center' }}>Cargando...</div>}>
       <Routes>
         {/* Publicas */}
         <Route path="/"                   element={<PaginaPublica />} />
@@ -64,6 +67,7 @@ export default function App() {
         <Route path="/cliente" element={<PrivateRoute roles={['cliente']}><MisReparacionesCliente /></PrivateRoute>} />
         <Route path="/cliente/:id" element={<PrivateRoute roles={['cliente']}><DetalleReparacionCliente /></PrivateRoute>} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
