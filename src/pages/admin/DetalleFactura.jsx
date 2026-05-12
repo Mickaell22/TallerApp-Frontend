@@ -6,7 +6,7 @@ import { getFactura, downloadPDF } from '../../services/facturaService'
 
 function formatMoneda(n) {
   if (!n && n !== 0) return '—'
-  return '$' + Number(n).toLocaleString('es-EC')
+  return '$' + Number(n).toLocaleString('es-EC', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
 function formatFecha(fecha) {
@@ -73,6 +73,10 @@ export default function DetalleFactura() {
 
   const repuestos = factura.reparacion?.repuestos || []
   const costoServicio = Number(factura.reparacion?.costo || 0)
+  const totalCalculado = repuestos.reduce((sum, rep) => {
+    const cant = rep.reparacion_repuesto?.cantidad || 1
+    return sum + Number(rep.precio || 0) * cant
+  }, costoServicio)
   const total = Number(factura.total || 0)
   const codigoFactura = `F-${String(factura.id).padStart(6, '0')}`
   const cliente = factura.reparacion?.cliente
@@ -162,7 +166,7 @@ export default function DetalleFactura() {
                 </tr>
                 <tr style={{ background: 'var(--c-surface-2)' }}>
                   <td colSpan="3" className="num" style={{ fontWeight: 700, fontSize: 14 }}>Total</td>
-                  <td className="num" style={{ fontWeight: 700, fontSize: 14, fontFeatureSettings: '"tnum"' }}>{formatMoneda(total)}</td>
+                  <td className="num" style={{ fontWeight: 700, fontSize: 14, fontFeatureSettings: '"tnum"' }}>{formatMoneda(totalCalculado)}</td>
                 </tr>
               </tbody>
             </table>
@@ -186,7 +190,7 @@ export default function DetalleFactura() {
                   {estadoPago}
                 </span>
               </dd>
-              <dt>Total</dt>       <dd style={{ fontWeight: 700 }}>{formatMoneda(total)}</dd>
+              <dt>Total</dt>       <dd style={{ fontWeight: 700 }}>{formatMoneda(totalCalculado)}</dd>
             </dl>
           </div>
 

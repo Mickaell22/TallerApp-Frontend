@@ -12,8 +12,8 @@ const FILTROS = [
 ]
 
 function formatMoneda(n) {
-  if (!n) return '—'
-  return '$' + Number(n).toLocaleString('es-EC')
+  if (!n && n !== 0) return '—'
+  return '$' + Number(n).toLocaleString('es-EC', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
 }
 
 function formatFecha(fecha) {
