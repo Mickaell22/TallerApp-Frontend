@@ -8,6 +8,7 @@ export default function Register() {
   const [form, setForm] = useState({ nombre: '', email: '', password: '', confirmar: '' })
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
+  const [ver, setVer] = useState({ password: false, confirmar: false })
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -76,29 +77,61 @@ export default function Register() {
 
           <div className="field">
             <label className="label">Contraseña</label>
-            <input
-              className="input"
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Mínimo 8 caracteres"
-              minLength={8}
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                className="input"
+                type={ver.password ? 'text' : 'password'}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Mínimo 8 caracteres"
+                minLength={8}
+                required
+                style={{ paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setVer(v => ({ ...v, password: !v.password }))}
+                tabIndex={-1}
+                aria-label={ver.password ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                style={{
+                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', padding: 4, cursor: 'pointer',
+                  color: 'var(--c-text-muted)', display: 'flex', alignItems: 'center',
+                }}
+              >
+                <Icon name={ver.password ? 'eyeOff' : 'eye'} size={16} />
+              </button>
+            </div>
           </div>
 
           <div className="field">
             <label className="label">Confirmar contraseña</label>
-            <input
-              className="input"
-              type="password"
-              name="confirmar"
-              value={form.confirmar}
-              onChange={handleChange}
-              placeholder="Repite la contraseña"
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                className="input"
+                type={ver.confirmar ? 'text' : 'password'}
+                name="confirmar"
+                value={form.confirmar}
+                onChange={handleChange}
+                placeholder="Repite la contraseña"
+                required
+                style={{ paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setVer(v => ({ ...v, confirmar: !v.confirmar }))}
+                tabIndex={-1}
+                aria-label={ver.confirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                style={{
+                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', padding: 4, cursor: 'pointer',
+                  color: 'var(--c-text-muted)', display: 'flex', alignItems: 'center',
+                }}
+              >
+                <Icon name={ver.confirmar ? 'eyeOff' : 'eye'} size={16} />
+              </button>
+            </div>
           </div>
 
           <button
