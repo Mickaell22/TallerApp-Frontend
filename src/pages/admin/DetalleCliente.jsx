@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../../components/layout/AdminLayout'
 import Icon from '../../components/ui/Icon'
-import { getCliente } from '../../services/clienteService'
+import { getCliente, updateCliente } from '../../services/clienteService'
 import { ESTADO_LABELS, estadoCSS } from '../../utils/estados'
 
 function formatMoneda(n) {
@@ -22,6 +22,10 @@ export default function DetalleCliente() {
   const [cliente, setCliente] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [editando, setEditando] = useState(false)
+  const [editForm, setEditForm] = useState({ nombre: '', telefono: '', direccion: '' })
+  const [guardandoEdit, setGuardandoEdit] = useState(false)
+  const [errorEdit, setErrorEdit] = useState('')
 
   useEffect(() => {
     if (!id || id === 'nuevo') {
@@ -62,6 +66,42 @@ export default function DetalleCliente() {
     )
   }
 
+  function abrirEdicion() {
+    setEditForm({
+      nombre:    cliente.usuario?.nombre || '',
+      telefono:  cliente.telefono || '',
+      direccion: cliente.direccion || '',
+    })
+    setErrorEdit('')
+    setEditando(true)
+  }
+
+  function handleEditChange(e) {
+    const { name, value } = e.target
+    if (name === 'telefono') {
+      setEditForm(f => ({ ...f, telefono: value.replace(/\D/g, '').slice(0, 10) }))
+      return
+    }
+    setEditForm(f => ({ ...f, [name]: value }))
+  }
+
+  async function handleGuardarEdit(e) {
+    e.preventDefault()
+    if (editForm.nombre.trim().length < 2) { setErrorEdit('El nombre debe tener al menos 2 caracteres'); return }
+    if (editForm.telefono && editForm.telefono.length !== 10) { setErrorEdit('El teléfono debe tener exactamente 10 dígitos'); return }
+    setGuardandoEdit(true)
+    setErrorEdit('')
+    try {
+      const res = await updateCliente(id, editForm)
+      setCliente(c => ({ ...c, ...res.data.data }))
+      setEditando(false)
+    } catch (err) {
+      setErrorEdit(err.response?.data?.error || 'Error al guardar cambios')
+    } finally {
+      setGuardandoEdit(false)
+    }
+  }
+
   const reparaciones   = cliente.reparaciones || []
   const totalEntregadas = reparaciones.filter(r => r.estado === 'entregado').length
   const totalGastado   = reparaciones.reduce((s, r) => s + Number(r.costo || 0), 0)
@@ -79,8 +119,8 @@ export default function DetalleCliente() {
           <h1 className="page-title">{cliente.usuario?.nombre || '—'}</h1>
           <p className="page-subtitle">Cliente desde {formatFecha(cliente.usuario?.createdAt)}</p>
         </div>
-        <button className="btn btn-secondary">
-          <Icon name="settings" size={14} /> Editar cliente
+        <button className="btn btn-secondary" onClick={abrirEdicion}>
+          <Icon name="edit" size={14} /> Editar cliente
         </button>
       </div>
 
@@ -89,13 +129,54 @@ export default function DetalleCliente() {
 
           <div className="card card-pad">
             <h3 className="card-title" style={{ marginBottom: 14 }}>Informacion de contacto</h3>
-            <dl className="kv">
-              <dt>Nombre</dt>     <dd>{cliente.usuario?.nombre || '—'}</dd>
-              <dt>Telefono</dt>   <dd className="mono">{cliente.telefono || '—'}</dd>
-              <dt>Correo</dt>     <dd>{cliente.usuario?.email || '—'}</dd>
-              <dt>Direccion</dt>  <dd>{cliente.direccion || '—'}</dd>
-              <dt>Registrado</dt> <dd>{formatFecha(cliente.usuario?.createdAt)}</dd>
-            </dl>
+            {editando ? (
+              <form onSubmit={handleGuardarEdit}>
+                {errorEdit && <div className="auth-error" style={{ marginBottom: 12 }}>{errorEdit}</div>}
+                <div className="field">
+                  <label className="label">Nombre completo</label>
+                  <input className="input" name="nombre" value={editForm.nombre} onChange={handleEditChange} required minLength={2} maxLength={100} />
+                </div>
+                <div className="field">
+                  <label className="label">Teléfono</label>
+                  <input
+                    className="input"
+                    name="telefono"
+                    value={editForm.telefono}
+                    onChange={handleEditChange}
+                    placeholder="0991234567"
+                    inputMode="numeric"
+                    maxLength={10}
+                  />
+                  {editForm.telefono && editForm.telefono.length !== 10 && (
+                    <span style={{ fontSize: 11.5, color: 'var(--c-danger)', marginTop: 4, display: 'block' }}>
+                      {editForm.telefono.length}/10 dígitos
+                    </span>
+                  )}
+                </div>
+                <div className="field">
+                  <label className="label">Dirección</label>
+                  <input className="input" name="direccion" value={editForm.direccion} onChange={handleEditChange} maxLength={200} placeholder="Ciudad, dirección" />
+                </div>
+                <dl className="kv" style={{ marginTop: 4 }}>
+                  <dt>Correo</dt>     <dd>{cliente.usuario?.email || '—'}</dd>
+                  <dt>Registrado</dt> <dd>{formatFecha(cliente.usuario?.createdAt)}</dd>
+                </dl>
+                <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setEditando(false)}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary" disabled={guardandoEdit}>
+                    <Icon name="check" size={14} /> {guardandoEdit ? 'Guardando...' : 'Guardar cambios'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <dl className="kv">
+                <dt>Nombre</dt>     <dd>{cliente.usuario?.nombre || '—'}</dd>
+                <dt>Telefono</dt>   <dd className="mono">{cliente.telefono || '—'}</dd>
+                <dt>Correo</dt>     <dd>{cliente.usuario?.email || '—'}</dd>
+                <dt>Direccion</dt>  <dd>{cliente.direccion || '—'}</dd>
+                <dt>Registrado</dt> <dd>{formatFecha(cliente.usuario?.createdAt)}</dd>
+              </dl>
+            )}
           </div>
 
           <div className="card">

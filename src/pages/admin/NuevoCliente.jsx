@@ -17,11 +17,25 @@ export default function NuevoCliente() {
   const [error, setError] = useState('')
 
   function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    if (name === 'telefono') {
+      setForm({ ...form, telefono: value.replace(/\D/g, '').slice(0, 10) })
+      return
+    }
+    setForm({ ...form, [name]: value })
+  }
+
+  function validar() {
+    if (form.nombre.trim().length < 2) return 'El nombre debe tener al menos 2 caracteres'
+    if (form.password.length < 6) return 'La contraseña debe tener al menos 6 caracteres'
+    if (form.telefono && form.telefono.length !== 10) return 'El teléfono debe tener exactamente 10 dígitos'
+    return null
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
+    const err = validar()
+    if (err) { setError(err); return }
     setError('')
     setGuardando(true)
     try {
@@ -56,7 +70,7 @@ export default function NuevoCliente() {
 
             <div className="field">
               <label className="label">Nombre completo *</label>
-              <input className="input" name="nombre" value={form.nombre} onChange={handleChange} required placeholder="Ej: Ana Torres" />
+              <input className="input" name="nombre" value={form.nombre} onChange={handleChange} required minLength={2} maxLength={100} placeholder="Ej: Ana Torres" />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -73,7 +87,21 @@ export default function NuevoCliente() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="field">
                 <label className="label">Teléfono</label>
-                <input className="input" name="telefono" value={form.telefono} onChange={handleChange} placeholder="0991234567" />
+                <input
+                  className="input"
+                  name="telefono"
+                  value={form.telefono}
+                  onChange={handleChange}
+                  placeholder="0991234567"
+                  inputMode="numeric"
+                  maxLength={10}
+                  title="Ingresa exactamente 10 dígitos"
+                />
+                {form.telefono && form.telefono.length !== 10 && (
+                  <span style={{ fontSize: 11.5, color: 'var(--c-danger)', marginTop: 4, display: 'block' }}>
+                    {form.telefono.length}/10 dígitos
+                  </span>
+                )}
               </div>
               <div className="field">
                 <label className="label">Dirección</label>

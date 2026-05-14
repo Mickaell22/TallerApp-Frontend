@@ -14,13 +14,18 @@ export default function Register() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  function validar() {
+    if (form.nombre.trim().length < 2) return 'El nombre debe tener al menos 2 caracteres'
+    if (form.password.length < 8) return 'La contraseña debe tener al menos 8 caracteres'
+    if (form.password !== form.confirmar) return 'Las contraseñas no coinciden'
+    return null
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
+    const err = validar()
+    if (err) { setError(err); return }
     setError('')
-    if (form.password !== form.confirmar) {
-      setError('Las contraseñas no coinciden')
-      return
-    }
     setCargando(true)
     try {
       await registerService({ nombre: form.nombre, email: form.email, password: form.password })
@@ -59,6 +64,8 @@ export default function Register() {
               onChange={handleChange}
               placeholder="Juan Pérez"
               required
+              minLength={2}
+              maxLength={100}
             />
           </div>
 

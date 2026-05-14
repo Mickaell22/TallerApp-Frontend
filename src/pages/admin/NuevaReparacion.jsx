@@ -154,12 +154,12 @@ export default function NuevaReparacion() {
                 </div>
                 <div className="field">
                   <label className="label">Modelo</label>
-                  <input className="input" name="modelo" value={form.modelo} onChange={handleChange} placeholder="Ej: iPhone 13, Galaxy A54..." required />
+                  <input className="input" name="modelo" value={form.modelo} onChange={handleChange} placeholder="Ej: iPhone 13, Galaxy A54..." required minLength={2} maxLength={100} />
                 </div>
               </div>
               <div className="field">
                 <label className="label">Falla reportada por el cliente</label>
-                <textarea className="input" name="falla" value={form.falla} onChange={handleChange} rows="3" placeholder="Describe el problema con el equipo..." required />
+                <textarea className="input" name="falla" value={form.falla} onChange={handleChange} rows="3" placeholder="Describe el problema con el equipo..." required minLength={10} maxLength={500} />
               </div>
               <div className="field">
                 <label className="label">Costo estimado (opcional)</label>
