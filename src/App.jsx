@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import PrivateRoute from './routes/PrivateRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const Login                     = lazy(() => import('./pages/Login'))
 const Register                  = lazy(() => import('./pages/Register'))
@@ -29,6 +30,7 @@ const DetalleReparacionCliente  = lazy(() => import('./pages/cliente/DetalleRepa
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <Suspense fallback={<div className="muted" style={{ padding: 40, textAlign: 'center' }}>Cargando...</div>}>
       <Routes>
@@ -69,5 +71,6 @@ export default function App() {
       </Routes>
       </Suspense>
     </BrowserRouter>
+    </ErrorBoundary>
   )
 }
