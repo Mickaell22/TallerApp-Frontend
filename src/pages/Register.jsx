@@ -40,6 +40,15 @@ export default function Register() {
   return (
     <div className="auth-root">
       <div className="auth-card">
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={() => navigate(-1)}
+          style={{ alignSelf: 'flex-start', marginBottom: 12, padding: '4px 8px' }}
+        >
+          ← Volver
+        </button>
+
         <div className="auth-brand">
           <div className="sidebar-brand-mark">T</div>
           <div>
