@@ -10,6 +10,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
+  const [verPassword, setVerPassword] = useState(false)
 
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -66,15 +67,31 @@ export default function Login() {
               <label className="label" style={{ margin: 0 }}>Contraseña</label>
               <Link to="/recuperar-password" className="auth-link">Olvidé mi contraseña</Link>
             </div>
-            <input
-              className="input"
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                className="input"
+                type={verPassword ? 'text' : 'password'}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                required
+                style={{ paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setVerPassword(v => !v)}
+                tabIndex={-1}
+                aria-label={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                style={{
+                  position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', padding: 4, cursor: 'pointer',
+                  color: 'var(--c-text-muted)', display: 'flex', alignItems: 'center',
+                }}
+              >
+                <Icon name={verPassword ? 'eyeOff' : 'eye'} size={16} />
+              </button>
+            </div>
           </div>
 
           <button

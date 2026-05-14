@@ -21,6 +21,7 @@ const icons = {
   chevronRight:<><path d="M9 6l6 6-6 6"/></>,
   chevronDown: <><path d="M6 9l6 6 6-6"/></>,
   eye:         <><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></>,
+  eyeOff:      <><path d="M17.9 17.9A10 10 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.1-6.1M9.9 4.2A9.1 9.1 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.2 3.2"/><path d="M10.7 10.7a3 3 0 1 0 4.2 4.2"/><path d="M2 2l20 20"/></>,
   edit:        <><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></>,
   filter:      <><path d="M3 4h18l-7 9v7l-4-2v-5L3 4z"/></>,
   calendar:    <><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></>,
