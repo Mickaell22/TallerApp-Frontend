@@ -28,11 +28,11 @@ El diseño usa un sistema CSS propio con variables de diseño (tokens), sin fram
 
 | Módulo | Descripción | Estado |
 |--------|-------------|--------|
-| Autenticación | Login, registro, recuperación de contraseña, roles | Pendiente |
-| Reparaciones | Recepción, diagnóstico, seguimiento, entrega | Pendiente |
-| Inventario | Repuestos, stock, alertas de stock mínimo | Pendiente |
-| Facturación | Generación y descarga de facturas en PDF | Pendiente |
-| Reportes | Reparaciones, ingresos e inventario por período | Pendiente |
+| Autenticación | Login, registro, recuperación de contraseña, roles | ✅ Implementado |
+| Reparaciones | Recepción, diagnóstico, seguimiento, entrega | ✅ Implementado |
+| Inventario | Repuestos, stock, alertas de stock mínimo | ✅ Implementado |
+| Facturación | Generación y descarga de facturas en PDF | ✅ Implementado |
+| Reportes | Reparaciones, ingresos e inventario por período | ✅ Implementado |
 
 ---
 
@@ -92,8 +92,8 @@ Frontend/
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/tallerapp-frontend.git
-cd tallerapp-frontend
+git clone https://github.com/Mickaell22/TallerApp-Frontend.git
+cd TallerApp-Frontend
 
 # 2. Instalar dependencias
 npm install
@@ -143,11 +143,11 @@ chore:    Configuración, dependencias
 ## Repositorio Backend
 
 Este frontend consume la API REST de:
-[TallerApp — Backend](https://github.com/tu-usuario/tallerapp-backend)
+[TallerApp — Backend](https://github.com/Mickaell22/TallerApp-Backend)
 
 ---
 
 ## Equipo
 
-Desarrollado por estudiantes de la **Universidad de Guayaquil**
-Asignatura: Gestión y Configuración del Software
+Desarrollado por **Morán Vera Mickaell Adrián**
+Universidad de Guayaquil — Asignatura: Gestión y Configuración del Software
